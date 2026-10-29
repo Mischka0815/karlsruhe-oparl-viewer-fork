@@ -18,6 +18,7 @@ Data fetching, caching, filtering logic, utilities, and TypeScript types.
 | `meeting-filter-controller.ts`  | Client-side meeting filtering and URL synchronization    |
 | `meeting-presentation.ts`       | Display name, month groups, row date/time for meetings   |
 | `paper-presentation.ts`         | Hides import artifacts: bulk stamp, placeholder offices  |
+| `paper-similarity.ts`           | Topical recommendations in mirror order                 |
 | `paper-detail-paths.ts`         | Maps paper references to URL slugs                       |
 | `meeting-paths.ts`              | Maps OParl meeting IDs to meeting detail routes          |
 | `meeting-calendar.ts`           | Serializes one meeting as an RFC 5545 calendar event     |
@@ -73,6 +74,13 @@ syndication-data/docs (data-source.ts, DATA_LOCAL_DIR)
   repeating across paper namespaces (`vo/1` vs `ag/1`)
 - Stable routing key: `paper.routeReference = paper.reference.replaceAll("/", "-")`
   — this mapping must remain stable or all detail page URLs break
+- Optional `paper-similar.json` maps paper record basenames to ranked lists of
+  recommended record basenames, strongest first. The viewer imposes no count
+  limit or scoring-version lock; upstream controls both. `resolveRelatedPapers()`
+  resolves these against active papers once per build through cached indexes;
+  `selectSimilarPapers()` drops self-links, explicit parent/child relations,
+  missing/deleted targets and duplicate destinations. No scores or reciprocal
+  links are inferred. Older checkouts without the artifact render no suggestions.
 - Feed metadata comes from `feed-index.json`; `loadSyndicationFeedCatalog()`
   indexes committee and district feeds for contextual links and `/feeds`
 - Generated sitting previews (`digests/meetings/<meeting id>-<lead>.json`) are

@@ -1,59 +1,94 @@
 ---
 import type { Paper } from "../shared/types";
-import { buildPaperDetailUrl } from "../shared/utils";
+import { buildPaperDetailUrl, formatDateShort } from "../shared/utils";
 
 interface Props {
   superordinated: Paper[];
   subordinated: Paper[];
+  similar: Paper[];
 }
 
-const { superordinated, subordinated } = Astro.props;
+const { superordinated, subordinated, similar } = Astro.props;
 const baseUrl = import.meta.env.BASE_URL;
 const groups = [
   { heading: "Übergeordnete Vorlagen", papers: superordinated },
   { heading: "Nachträge und zugehörige Vorlagen", papers: subordinated },
 ].filter((group) => group.papers.length > 0);
+const SimilarHeading = groups.length > 0 ? "h3" : "h2";
 ---
 
-{groups.length > 0 && (
-  <section class="section-card" data-pagefind-ignore>
-    <h2 class="section-heading">Zusammengehörige Vorlagen</h2>
-    <div class="related-groups">
-      {groups.map((group) => (
-        <div>
-          <h3>{group.heading}</h3>
-          <ul>
-            {group.papers.map((paper) => (
-              <li>
-                <a href={buildPaperDetailUrl(baseUrl, paper.routeReference)}>
-                  <span>{paper.name}</span>
-                  <small>
-                    {paper.reference} · {paper.paperType}
-                  </small>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
-    </div>
+{(groups.length > 0 || similar.length > 0) && (
+  <section class="section-card related-papers" data-pagefind-ignore>
+    {groups.length > 0 && (
+      <h2 class="section-heading">Zusammengehörige Vorlagen</h2>
+    )}
+    {groups.length > 0 && (
+      <div class="related-groups">
+        {groups.map((group) => (
+          <div>
+            <h3>{group.heading}</h3>
+            <ul>
+              {group.papers.map((paper) => (
+                <li>
+                  <a href={buildPaperDetailUrl(baseUrl, paper.routeReference)}>
+                    <span>{paper.name}</span>
+                    <small>
+                      {paper.reference} · {paper.paperType}
+                    </small>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    )}
+    {similar.length > 0 && (
+      <details
+        class:list={["similar-papers", { "has-relations": groups.length > 0 }]}
+      >
+        <summary>
+          <SimilarHeading
+            class:list={{ "section-heading": groups.length === 0 }}
+          >
+            Thematisch ähnlich{" "}
+            <span class="similar-count">({similar.length})</span>
+          </SimilarHeading>
+        </summary>
+        <p>Automatisch nach inhaltlicher Ähnlichkeit ausgewählt.</p>
+        <ul>
+          {similar.map((paper) => (
+            <li>
+              <a href={buildPaperDetailUrl(baseUrl, paper.routeReference)}>
+                <span>{paper.name}</span>
+                <small>
+                  {[paper.reference, formatDateShort(paper.date)]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </small>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </details>
+    )}
   </section>
 )}
 
-<style>
-  .section-heading {
+<style is:global>
+  .related-papers .section-heading {
     margin-top: 0;
   }
 
   /* Sits in the detail sidebar, so it stacks by default and only spreads out
      where the column is genuinely wide. */
-  .related-groups {
+  .related-papers .related-groups {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
     gap: 20px;
   }
 
-  h3 {
+  .related-papers h3 {
     margin: 0 0 8px;
     font-size: 0.78rem;
     font-weight: 700;
@@ -62,7 +97,7 @@ const groups = [
     color: var(--color-text-muted);
   }
 
-  ul {
+  .related-papers ul {
     list-style: none;
     margin: 0;
     padding: 0;
@@ -70,23 +105,64 @@ const groups = [
     border-radius: var(--radius);
   }
 
-  li:not(:last-child) {
+  .related-papers li:not(:last-child) {
     border-bottom: 1px solid var(--color-border);
   }
 
-  a {
+  .related-papers a {
     display: grid;
     gap: 4px;
     padding: 12px;
     color: var(--color-link);
     text-decoration: none;
+    overflow-wrap: anywhere;
   }
 
-  a:hover {
+  .related-papers a:hover {
     background: #fafafa;
   }
 
-  small {
+  .related-papers small {
+    color: var(--color-text-muted);
+  }
+
+  .similar-papers.has-relations {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .similar-papers summary {
+    cursor: pointer;
+  }
+
+  .similar-papers summary:focus-visible {
+    outline: 3px solid #175f94;
+    outline-offset: 3px;
+  }
+
+  .similar-papers summary :is(h2, h3) {
+    display: inline;
+    margin: 0;
+    text-transform: none;
+    letter-spacing: normal;
+    color: var(--color-text);
+  }
+
+  .similar-papers summary h3 {
+    font-size: 0.95rem;
+  }
+
+  .similar-papers .similar-count {
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+    font-weight: normal;
+  }
+
+  .similar-papers p {
+    margin: 10px 0;
+    font-size: 0.85rem;
+    line-height: 1.5;
     color: var(--color-text-muted);
   }
 </style>

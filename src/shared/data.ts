@@ -14,6 +14,7 @@ import {
 import { MEETING_DIGEST_LEADS } from "./meeting-digest";
 import { buildMeetingFilterModel } from "./meeting-filters";
 import { parseOrtschaftName } from "./meeting-presentation";
+import { selectSimilarPapers } from "./paper-similarity";
 import type {
   FileContent,
   Meeting,
@@ -24,6 +25,7 @@ import type {
   PaperDistrictEntry,
   PaperDistrictIndex,
   PaperSummary,
+  PaperSimilarityIndex,
   PaperSubmitter,
   PaperSubmitterIndex,
   ResolvedPaperSubmitter,
@@ -516,6 +518,15 @@ const loadPapersById = memoizeAsync(async (): Promise<Map<string, Paper>> => {
   return new Map(papers.map((paper) => [paper.id, paper]));
 });
 
+const loadPapersByRecordId = memoizeAsync(async () => {
+  const papers = await loadPapers();
+  return new Map(papers.map((paper) => [getOParlEntityId(paper.id), paper]));
+});
+
+const loadPaperSimilarity = memoizeAsync(async () => {
+  return dataSource.loadOptionalObject<PaperSimilarityIndex>("paper-similar");
+});
+
 const loadPapersByConsultationId = memoizeAsync(
   async (): Promise<Map<string, Paper>> => {
     const papers = await loadPapers();
@@ -547,11 +558,21 @@ export async function resolveMeetingAgenda(
 export async function resolveRelatedPapers(paper: Paper): Promise<{
   superordinated: Paper[];
   subordinated: Paper[];
+  similar: Paper[];
 }> {
-  const papersById = await loadPapersById();
+  const [papersById, papersByRecordId, similarity] = await Promise.all([
+    loadPapersById(),
+    loadPapersByRecordId(),
+    loadPaperSimilarity(),
+  ]);
 
   return {
     superordinated: resolveEntityIds(paper.superordinatedPaper, papersById),
     subordinated: resolveEntityIds(paper.subordinatedPaper, papersById),
+    similar: selectSimilarPapers(
+      paper,
+      similarity?.papers[getOParlEntityId(paper.id)],
+      papersByRecordId,
+    ),
   };
 }

@@ -28,7 +28,7 @@ Reusable UI components. Prefer extending existing components over creating new o
 | `MeetingDigest.astro`        | Generated sitting preview — shell only, filled at runtime         |
 | `MeetingAgenda.astro`        | Public agenda with links to matching papers                       |
 | `PaperTimeline.astro`        | Paper lifecycle, consultations, and decisions                     |
-| `RelatedPapers.astro`        | Parent, amendment, and follow-up paper links                      |
+| `RelatedPapers.astro`        | Procedural links + collapsed topical recommendations             |
 
 ## Reuse Rules
 
@@ -38,6 +38,13 @@ Reusable UI components. Prefer extending existing components over creating new o
 - Use `FilterSelect` for every filter dropdown; do not build ad-hoc selects
 
 ## Contracts — Do Not Break
+
+**Related papers** — OParl parent/child links stay visible. Optional topical
+recommendations from `paper-similar.json` live in the same card behind a native
+"Thematisch ähnlich" disclosure, collapsed by default. Keep their upstream rank
+and count, and label them as automatically selected by content. They
+are not a procedural history. Missing recommendations render nothing. The whole
+card stays outside Pagefind so suggested titles do not pollute the current paper.
 
 **Unified paper discovery** — see [SEARCH.md](../../SEARCH.md). `SearchPanel`
 uses `search-state.ts`, `search-index.ts`, and `search-panel-controller.ts`.
