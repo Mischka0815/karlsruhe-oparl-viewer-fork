@@ -30,7 +30,7 @@ It builds from an OParl-based JSON mirror and publishes to GitHub Pages.
 
 ## Requirements
 
-- Node.js 24.x recommended
+- Node.js 26.x recommended
 - npm
 - A local checkout of the council data (created by `npm run data:setup`)
 
@@ -138,7 +138,7 @@ GitHub Pages deployment is configured in `.github/workflows/deploy.yml`:
 - Scheduled runs skip checkout/build/deploy when the viewer and data revisions
   were already deployed successfully
 - Resolves and checks out one exact council-data revision
-- Uses Node 24, `npm ci`, `npm run build:quiet`, output verification, and
+- Uses Node 26, `npm ci`, `npm run build:quiet`, output verification, and
   `actions/deploy-pages@v5`
 - Cancels superseded builds while allowing an active deployment to finish
 

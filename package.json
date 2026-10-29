@@ -3,7 +3,7 @@
   "type": "module",
   "version": "0.0.1",
   "engines": {
-    "node": ">=24"
+    "node": ">=26"
   },
   "scripts": {
     "predev": "node scripts/ensure-pagefind-index.mjs",
@@ -24,12 +24,12 @@
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",
-    "astro": "^7.4.1",
+    "astro": "^7.4.4",
     "pagefind": "^1.5.2"
   },
   "devDependencies": {
-    "@types/node": "^26.6.5",
+    "@types/node": "^26.6.6",
     "prettier": "^3.9.10",
-    "prettier-plugin-astro": "^1.1.1"
+    "prettier-plugin-astro": "^1.1.2"
   }
 }

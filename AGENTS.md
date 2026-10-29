@@ -4,7 +4,7 @@
 
 - **Name:** GemeinderatsRadar (`karlsruhe-oparl-viewer`)
 - **Purpose:** Static Astro site for browsing Karlsruhe council papers from an OParl JSON mirror
-- **Stack:** Astro 7.4.x, TypeScript strict, Node 24.x, npm with `package-lock.json`
+- **Stack:** Astro 7.4.x, TypeScript strict, Node 26.x, npm with `package-lock.json`
 - **Formatting:** Prettier 3 + `prettier-plugin-astro` (`npm run format`)
 - **Hosting:** GitHub Pages via `.github/workflows/deploy.yml`
 
