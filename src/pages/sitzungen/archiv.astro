@@ -2,6 +2,7 @@
 import Layout from "../../layouts/Layout.astro";
 import PageContainer from "../../components/PageContainer.astro";
 import MeetingViewTabs from "../../components/MeetingViewTabs.astro";
+import { formatMeetingName } from "../../shared/meeting-presentation";
 import { getPastMeetings, loadOrganizations } from "../../shared/data";
 import { buildMeetingFilterModel } from "../../shared/meeting-filters";
 import {
@@ -82,7 +83,9 @@ const maximumYearCount = Math.max(
                 <span class="recent-date">
                   {formatDateShort(meeting.start)}
                 </span>
-                <a href={buildMeetingDetailUrl(baseUrl, id)}>{meeting.name}</a>
+                <a href={buildMeetingDetailUrl(baseUrl, id)}>
+                  {formatMeetingName(meeting.name)}
+                </a>
                 <span class="recent-organization">
                   {valuesById[meeting.id]?.organizationLabel}
                 </span>

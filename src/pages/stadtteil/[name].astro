@@ -1,4 +1,5 @@
 ---
+import { getPaperDetailStaticPaths } from "../../shared/paper-detail-paths";
 import Layout from "../../layouts/Layout.astro";
 import PaperListPage from "../../components/PaperListPage.astro";
 import Breadcrumbs from "../../components/Breadcrumbs.astro";
@@ -6,11 +7,11 @@ import StadtteilHint from "../../components/StadtteilHint.astro";
 import FeedSubscriptionLink from "../../components/FeedSubscriptionLink.astro";
 import {
   getAvailableDistricts,
-  loadPapers,
+  getOrtschaften,
   loadSyndicationFeedCatalog,
 } from "../../shared/data";
-import { loadPaperFilterModel } from "../../shared/paper-filters";
-import { slugify } from "../../shared/utils";
+import { getDistrictOrtschaft } from "../../shared/meeting-presentation";
+import { buildOrtschaftMeetingsUrl, slugify } from "../../shared/utils";
 
 export async function getStaticPaths() {
   const districtNames = await getAvailableDistricts();
@@ -23,61 +24,72 @@ export async function getStaticPaths() {
 const { districtName } = Astro.props;
 const baseUrl = import.meta.env.BASE_URL;
 
-const allPapers = await loadPapers();
+const allPapers = (await getPaperDetailStaticPaths()).map(
+  (path) => path.props.paper,
+);
 const feedCatalog = await loadSyndicationFeedCatalog();
 const districtPapers = allPapers.filter((paper) =>
   paper.stadtteile.includes(districtName),
 );
 const districtFeed = feedCatalog.districtFeedByName.get(districtName);
+const ortschaften = await getOrtschaften();
+const ortschaft = getDistrictOrtschaft(
+  districtName,
+  ortschaften.withUpcomingMeetings,
+);
 
-const { papers, valuesById, options } =
-  await loadPaperFilterModel(districtPapers);
+const papers = districtPapers;
 ---
 
 <Layout
   title={districtName}
-  description={`Vorlagen des Karlsruher Gemeinderats mit Bezug zum Stadtteil ${districtName} – ${papers.length} Einträge, nach Jahr und Status filterbar.`}
+  description={`Vorlagen des Karlsruher Gemeinderats mit Bezug zum Stadtteil ${districtName} – ${papers.length} Einträge, mit Volltextsuche und Filtern.`}
   navigationSection="districts"
 >
-  <PaperListPage
-    title={districtName}
-    papers={papers}
-    filterValuesById={valuesById}
-    filterOptions={options}
-  >
+  <PaperListPage scope={{ district: districtName }} title={districtName}>
+    <Breadcrumbs
+      slot="breadcrumbs"
+      items={[
+        { label: "Stadtteile", href: `${baseUrl}stadtteile` },
+        { label: districtName },
+      ]}
+    />
+    {/* The paper count lives in the search toolbar; the row keeps only what
+        leads elsewhere. */}
     <div slot="intro">
-      <Breadcrumbs
-        items={[
-          { label: "Stadtteile", href: `${baseUrl}stadtteile` },
-          { label: districtName },
-        ]}
-      />
-      <div class="district-actions" data-pagefind-ignore>
-        <p class="subtitle">{papers.length} Vorlagen</p>
-        {districtFeed && (
-          <FeedSubscriptionLink
-            href={districtFeed.url}
-            label={`Aktualisierungen für ${districtName} abonnieren`}
-          />
-        )}
-      </div>
+      {(districtFeed || ortschaft) && (
+        <p class="district-links" data-pagefind-ignore>
+          {ortschaft && (
+            <a href={buildOrtschaftMeetingsUrl(baseUrl, ortschaft)}>
+              Sitzungen des Ortschaftsrats {ortschaft}
+            </a>
+          )}
+          {districtFeed && (
+            <FeedSubscriptionLink
+              href={districtFeed.url}
+              label="Aktualisierungen abonnieren"
+              compact
+            />
+          )}
+        </p>
+      )}
+      <StadtteilHint />
     </div>
-    <StadtteilHint slot="intro" />
   </PaperListPage>
 </Layout>
 
 <style>
-  .district-actions {
+  .district-links {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: center;
-    flex-wrap: wrap;
-    gap: 10px 16px;
-    color: var(--color-text-muted);
-    margin-bottom: 14px;
+    gap: 8px 18px;
+    margin: -6px 0 10px;
+    font-size: 0.88rem;
   }
 
-  .subtitle {
-    margin: 0;
+  .district-links > a {
+    color: var(--color-link);
   }
 </style>

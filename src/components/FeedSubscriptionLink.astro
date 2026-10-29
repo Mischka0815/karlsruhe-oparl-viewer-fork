@@ -2,13 +2,19 @@
 interface Props {
   href: string;
   label?: string;
+  /** A plain inline link for rows of other links, instead of a boxed button. */
+  compact?: boolean;
 }
 
-const { href, label = "Aktualisierungen abonnieren" } = Astro.props;
+const {
+  href,
+  label = "Aktualisierungen abonnieren",
+  compact = false,
+} = Astro.props;
 ---
 
 <a
-  class="feed-subscription-link"
+  class:list={["feed-subscription-link", compact && "compact"]}
   href={href}
   target="_blank"
   rel="noopener noreferrer"
@@ -41,6 +47,20 @@ const { href, label = "Aktualisierungen abonnieren" } = Astro.props;
   .feed-subscription-link:hover {
     background: #fafafa;
     text-decoration: underline;
+  }
+
+  .feed-subscription-link.compact {
+    gap: 5px;
+    padding: 0;
+    border: 0;
+    background: none;
+    font-size: inherit;
+    font-weight: inherit;
+  }
+
+  .compact svg {
+    width: 15px;
+    height: 15px;
   }
 
   svg {

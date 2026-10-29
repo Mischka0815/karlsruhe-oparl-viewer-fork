@@ -4,15 +4,20 @@ import { buildPaperDetailUrl } from "../shared/utils";
 
 interface Props {
   items: ResolvedAgendaItem[];
+  /** A past sitting without a public agenda will not get one any more. */
+  isPast?: boolean;
 }
 
-const { items } = Astro.props;
+const { items, isPast = false } = Astro.props;
 const baseUrl = import.meta.env.BASE_URL;
 ---
 
-<section class="section-card" data-pagefind-ignore>
-  <h2 class="section-heading">Öffentliche Tagesordnung</h2>
-  {items.length > 0 ? (
+{/* Without items the section shrinks to one line: a full card with a heading
+    around "noch nicht veröffentlicht" was the largest thing on most upcoming
+    meeting pages. */}
+{items.length > 0 ? (
+  <section class="section-card" data-pagefind-ignore>
+    <h2 class="section-heading">Öffentliche Tagesordnung</h2>
     <ol class="agenda-list">
       {items.map(({ agendaItem, paper }) => (
         <li class="agenda-item">
@@ -35,12 +40,14 @@ const baseUrl = import.meta.env.BASE_URL;
         </li>
       ))}
     </ol>
-  ) : (
-    <p class="empty-agenda">
-      Die öffentliche Tagesordnung ist noch nicht veröffentlicht.
-    </p>
-  )}
-</section>
+  </section>
+) : (
+  <p class="empty-agenda" data-pagefind-ignore>
+    {isPast
+      ? "Zu dieser Sitzung wurde keine öffentliche Tagesordnung veröffentlicht."
+      : "Die öffentliche Tagesordnung ist noch nicht veröffentlicht."}
+  </p>
+)}
 
 <style>
   .agenda-list {
@@ -88,6 +95,13 @@ const baseUrl = import.meta.env.BASE_URL;
   .empty-agenda {
     color: var(--color-text-muted);
     font-size: 0.9rem;
+  }
+
+  .empty-agenda {
+    margin: 20px 0 0;
+    padding: 12px 16px;
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius);
   }
 
   @media screen and (max-width: 600px) {

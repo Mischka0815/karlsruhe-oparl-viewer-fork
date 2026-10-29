@@ -18,7 +18,6 @@ export type {
   PaperDistrictEntry,
   PaperDistrictIndex,
 } from "./paper-districts.ts";
-export type { PaperFilterValues, PaperFilterOptions } from "./paper-filters.ts";
 export type { PaperSummary } from "./paper-summary.ts";
 export type {
   PaperSubmitter,

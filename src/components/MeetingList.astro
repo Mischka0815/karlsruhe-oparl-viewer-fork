@@ -1,11 +1,14 @@
 ---
 import type { MeetingListVariant } from "../shared/meeting-filter-definitions";
-import type { Meeting, MeetingFilterValues } from "../shared/types";
+import { UNKNOWN_MEETING_ORGANIZATION } from "../shared/meeting-filters";
 import {
-  buildMeetingDetailUrl,
-  formatDateTime,
-  getOParlEntityId,
-} from "../shared/utils";
+  formatMeetingDayAndTime,
+  formatMeetingName,
+  getUnnamedOrganizations,
+  groupMeetingsByMonth,
+} from "../shared/meeting-presentation";
+import type { Meeting, MeetingFilterValues } from "../shared/types";
+import { buildMeetingDetailUrl, getOParlEntityId } from "../shared/utils";
 
 interface Props {
   meetings: Meeting[];
@@ -15,128 +18,220 @@ interface Props {
 
 const { meetings, filterValuesById, variant = "upcoming" } = Astro.props;
 const baseUrl = import.meta.env.BASE_URL;
-
-/**
- * Past meetings are judged by what they left behind (protocol), upcoming ones
- * by what is already announced (agenda) — same card, different question.
- */
-function describeAgenda(count: number): string {
-  if (count > 0) return `${count} öffentliche Tagesordnungspunkte`;
-  return variant === "archive"
-    ? "Keine öffentliche Tagesordnung"
-    : "Tagesordnung noch nicht veröffentlicht";
-}
+const groups = groupMeetingsByMonth(meetings);
 ---
 
-<ul class="meeting-list" data-pagefind-ignore>
-  {meetings.map((meeting) => {
-    const id = getOParlEntityId(meeting.id);
-    const filterValues = filterValuesById[meeting.id];
-    return (
-      <li data-meeting-item>
-        <article
-          class="meeting-card"
-          data-meeting-card
-          data-body-types={filterValues.bodyTypes.join("|")}
-          data-organizations={filterValues.organizations.join("|")}
-          data-districts={filterValues.districts.join("|")}
-          data-start={meeting.start}
-          data-month={filterValues.month}
-          data-has-public-agenda={String(filterValues.publicAgendaCount > 0)}
-          data-has-protocol={String(filterValues.hasProtocol)}
-          data-search={filterValues.searchText}
-        >
-          <div class="meeting-date">
-            <time datetime={meeting.start}>
-              {formatDateTime(meeting.start)} Uhr
-            </time>
-            <span>{meeting.location?.description || "Ort noch offen"}</span>
-          </div>
-          <h2>
-            <a href={buildMeetingDetailUrl(baseUrl, id)}>{meeting.name}</a>
-          </h2>
-          <p class="meeting-organization">{filterValues.organizationLabel}</p>
-          <div class="meeting-actions">
-            <span
-              class:list={[
-                "agenda-status",
-                filterValues.publicAgendaCount > 0 && "available",
-              ]}
-            >
-              {describeAgenda(filterValues.publicAgendaCount)}
-            </span>
-            {variant === "archive" && filterValues.hasProtocol && (
-              <span class="protocol-status">Protokoll vorhanden</span>
-            )}
-          </div>
-        </article>
-      </li>
-    );
-  })}
-</ul>
+{/* One row per meeting under a month heading, rather than a card: a council
+    calendar is scanned by date, and most of what a card repeated ("Ort noch
+    offen", "Tagesordnung noch nicht veröffentlicht", the committee again under
+    its own name) said nothing. Only what is known is printed. The controller
+    hides a month whose rows are all filtered out. */}
+<div class="meeting-months" data-pagefind-ignore>
+  {groups.map((group) => (
+    <section
+      class="meeting-month"
+      aria-labelledby={`monat-${group.key}`}
+      data-meeting-group
+    >
+      <h2 class="meeting-month-heading" id={`monat-${group.key}`}>
+        {group.label}
+      </h2>
+      <ul class="meeting-list">
+        {group.meetings.map((meeting) => {
+          const id = getOParlEntityId(meeting.id);
+          const filterValues = filterValuesById[meeting.id];
+          const name = formatMeetingName(meeting.name);
+          const { day, time } = formatMeetingDayAndTime(meeting.start);
+          const organizations = getUnnamedOrganizations(
+            name,
+            filterValues.organizations.filter(
+              (organization) => organization !== UNKNOWN_MEETING_ORGANIZATION,
+            ),
+          );
+          const details = [organizations.join(", "), filterValues.location]
+            .filter(Boolean)
+            .join(" · ");
+          const agendaCount = filterValues.publicAgendaCount;
+          const hasProtocol = variant === "archive" && filterValues.hasProtocol;
+          return (
+            <li data-meeting-item>
+              <article
+                class="meeting-row"
+                data-meeting-card
+                data-body-types={filterValues.bodyTypes.join("|")}
+                data-organizations={filterValues.organizations.join("|")}
+                data-districts={filterValues.districts.join("|")}
+                data-start={meeting.start}
+                data-month={filterValues.month}
+                data-has-public-agenda={String(agendaCount > 0)}
+                data-has-protocol={String(filterValues.hasProtocol)}
+                data-search={filterValues.searchText}
+              >
+                <time class="meeting-when" datetime={meeting.start}>
+                  <span class="meeting-day">{day}</span>
+                  {time && <span class="meeting-time">{time} Uhr</span>}
+                </time>
+                <div class="meeting-main">
+                  <h3 class="meeting-name">
+                    <a href={buildMeetingDetailUrl(baseUrl, id)}>{name}</a>
+                  </h3>
+                  {details && <p class="meeting-details">{details}</p>}
+                </div>
+                {(agendaCount > 0 || hasProtocol) && (
+                  <p class="meeting-status">
+                    {agendaCount > 0 && (
+                      <span
+                        class="agenda-count"
+                        title={`${agendaCount} öffentliche Tagesordnungspunkte`}
+                      >
+                        {agendaCount} {agendaCount === 1 ? "TOP" : "TOPs"}
+                      </span>
+                    )}
+                    {hasProtocol && (
+                      <span class="protocol-status">Protokoll</span>
+                    )}
+                  </p>
+                )}
+              </article>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  ))}
+</div>
 
 <style>
+  .meeting-months {
+    display: grid;
+    gap: 22px;
+  }
+
+  /* `display: grid` would otherwise beat the `hidden` the controller sets. */
+  .meeting-month[hidden],
+  .meeting-list [hidden] {
+    display: none;
+  }
+
+  .meeting-month-heading {
+    margin: 0 0 8px;
+    color: var(--color-text-muted);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
   .meeting-list {
     list-style: none;
     margin: 0;
     padding: 0;
-    display: grid;
-    gap: 14px;
-  }
-
-  .meeting-card {
-    padding: 20px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius);
     background: #fff;
-    box-shadow: var(--shadow-card);
   }
 
-  .meeting-date,
-  .meeting-actions {
+  .meeting-list > li + li {
+    border-top: 1px solid var(--color-border);
+  }
+
+  /* Hiding a row must not leave a doubled border behind it. */
+  .meeting-list > li[hidden] + li {
+    border-top: 0;
+  }
+
+  .meeting-row {
+    display: grid;
+    grid-template-columns: 7.5rem minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: 4px 16px;
+    padding: 12px 16px;
+  }
+
+  .meeting-when {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px 16px;
-    color: var(--color-text-muted);
-    font-size: 0.9rem;
+    flex-direction: column;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.4;
   }
 
-  .meeting-date time {
+  .meeting-day {
     color: var(--color-text);
+    font-size: 0.9rem;
     font-weight: 700;
   }
 
-  h2 {
-    margin: 12px 0;
-    font-size: 1.2rem;
+  .meeting-time,
+  .meeting-details,
+  .meeting-status {
+    color: var(--color-text-muted);
+    font-size: 0.84rem;
+    line-height: 1.45;
   }
 
-  h2 a {
+  .meeting-name {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
+
+  .meeting-name a {
     color: var(--color-link);
     text-decoration: none;
   }
 
-  h2 a:hover {
+  .meeting-name a:hover {
     text-decoration: underline;
   }
 
-  .meeting-organization {
-    margin: -4px 0 14px;
-    color: var(--color-text-muted);
-    font-size: 0.9rem;
+  .meeting-details {
+    margin: 2px 0 0;
+    overflow-wrap: anywhere;
   }
 
-  .agenda-status.available {
+  .meeting-status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-end;
+    margin: 0;
+    white-space: nowrap;
+  }
+
+  .agenda-count {
     color: #176b3a;
     font-weight: 700;
   }
 
   .protocol-status {
-    padding: 2px 10px;
+    padding: 0 8px;
     border: 1px solid var(--color-border);
     border-radius: 999px;
-    font-size: 0.8rem;
+    font-size: 0.78rem;
+  }
+
+  /* Phones: date and time on one line above the name, status after it. */
+  @media screen and (max-width: 600px) {
+    .meeting-row {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 2px;
+      padding: 11px 14px;
+    }
+
+    .meeting-when {
+      flex-direction: row;
+      gap: 6px;
+    }
+
+    .meeting-day,
+    .meeting-time {
+      font-size: 0.82rem;
+    }
+
+    .meeting-status {
+      justify-content: flex-start;
+      margin-top: 2px;
+    }
   }
 </style>

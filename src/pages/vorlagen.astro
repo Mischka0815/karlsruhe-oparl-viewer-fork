@@ -1,20 +1,8 @@
 ---
-import Layout from "../layouts/Layout.astro";
-import PaperListPage from "../components/PaperListPage.astro";
-import { loadPaperFilterModel } from "../shared/paper-filters";
-
-const { papers, valuesById, options } = await loadPaperFilterModel();
+import LegacyRedirectPage from "../components/LegacyRedirectPage.astro";
 ---
 
-<Layout
-  title="Vorlagen"
-  description="Vorlagen des Karlsruher Gemeinderats nach Jahr, Gremium und Status – mit Volltextsuche über die angehängten Dokumente."
-  navigationSection="papers"
->
-  <PaperListPage
-    title="Vorlagen"
-    papers={papers}
-    filterValuesById={valuesById}
-    filterOptions={options}
-  />
-</Layout>
+<LegacyRedirectPage
+  targetUrl={import.meta.env.BASE_URL}
+  preserveSearchAndHash
+/>

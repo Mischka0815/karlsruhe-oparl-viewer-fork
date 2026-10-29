@@ -26,6 +26,7 @@ const integrations = [
   sitemap({
     filter: (page) => {
       const { pathname } = new URL(page);
+      if (/\/vorlagen(?:\d{4})?(?:\.html)?$/.test(pathname)) return false;
       return !EXCLUDED_FROM_SITEMAP.some((prefix) =>
         pathname.startsWith(prefix),
       );

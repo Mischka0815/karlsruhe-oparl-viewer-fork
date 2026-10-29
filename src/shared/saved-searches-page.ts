@@ -1,3 +1,8 @@
+import {
+  serializeSearchState,
+  parseSearchState,
+  searchLabel,
+} from "./search-state";
 import { getPagefindFreshnessStats } from "./pagefind-client";
 import {
   buildSavedSearchUrl,
@@ -22,17 +27,21 @@ interface SearchItem {
   freshnessBadge: HTMLSpanElement;
 }
 
-function createSearchItem(search: SavedSearch, baseUrl: string): SearchItem {
+function createSearchItem(
+  search: SavedSearch,
+  baseUrl: string,
+  labels: Record<string, Record<string, string>>,
+): SearchItem {
   const item = document.createElement("li");
   item.className = "saved-search-item";
 
   const link = document.createElement("a");
   link.className = "saved-search-link";
-  link.href = buildSavedSearchUrl(baseUrl, search.query);
+  link.href = buildSavedSearchUrl(baseUrl, search.state);
 
   const queryLabel = document.createElement("span");
   queryLabel.className = "saved-search-query";
-  queryLabel.textContent = search.query;
+  queryLabel.textContent = searchLabel(search.state, labels);
 
   const countBadge = document.createElement("span");
   countBadge.className = "saved-search-count-badge";
@@ -53,12 +62,20 @@ function createSearchItem(search: SavedSearch, baseUrl: string): SearchItem {
   removeButton.className = "saved-search-remove-button";
   removeButton.innerHTML = CLOSE_SVG;
   removeButton.dataset.removeSavedSearch = "true";
-  removeButton.dataset.query = search.query;
-  removeButton.setAttribute("aria-label", `Suche "${search.query}" entfernen`);
+  removeButton.dataset.query = serializeSearchState(search.state);
+  removeButton.setAttribute(
+    "aria-label",
+    `Suche "${searchLabel(search.state, labels)}" entfernen`,
+  );
 
   item.append(link, removeButton);
 
-  return { element: item, query: search.query, countBadge, freshnessBadge };
+  return {
+    element: item,
+    query: serializeSearchState(search.state),
+    countBadge,
+    freshnessBadge,
+  };
 }
 
 function setUnavailableBadge(badge: HTMLSpanElement, label: string): void {
@@ -73,14 +90,14 @@ async function loadResultCounts(
   searches: SavedSearch[],
 ): Promise<void> {
   const searchesByQuery = new Map(
-    searches.map((search) => [search.query, search]),
+    searches.map((search) => [serializeSearchState(search.state), search]),
   );
   const results = await Promise.allSettled(
     items.map(({ query }) => {
       const search = searchesByQuery.get(query);
       return getPagefindFreshnessStats(
         baseUrl,
-        query,
+        parseSearchState(new URLSearchParams(query)),
         search?.lastViewedAt ?? search?.savedAt ?? DEFAULT_SEARCH_CHECKPOINT,
       );
     }),
@@ -162,6 +179,7 @@ export function initSavedSearchesPage(): void {
   );
   if (!root) return;
 
+  const labels = JSON.parse(root.dataset.searchLabels ?? "{}");
   const baseUrl = root.dataset.baseUrl ?? "/";
   const pagefindEnabled = root.dataset.pagefindEnabled === "true";
 
@@ -237,7 +255,9 @@ export function initSavedSearchesPage(): void {
       return;
     }
 
-    const items = searches.map((search) => createSearchItem(search, baseUrl));
+    const items = searches.map((search) =>
+      createSearchItem(search, baseUrl, labels),
+    );
     listEl.replaceChildren(...items.map((item) => item.element));
 
     showListState();
@@ -262,7 +282,10 @@ export function initSavedSearchesPage(): void {
     if (!removeButton) return;
 
     const query = removeButton.dataset.query ?? "";
-    const nextSearches = removeSavedSearch(searches, query);
+    const nextSearches = removeSavedSearch(
+      searches,
+      parseSearchState(new URLSearchParams(query)),
+    );
     if (nextSearches.length === searches.length) return;
 
     const saved = writeSavedSearches(storage, nextSearches);

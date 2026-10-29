@@ -1,190 +1,141 @@
+import {
+  parseSearchState,
+  serializeSearchState,
+  type SearchState,
+} from "./search-state.ts";
 export const SAVED_SEARCHES_STORAGE_KEY = "gemeinderatsradar.saved-searches";
 export const SAVED_SEARCH_QUERY_PARAM = "q";
-export const SAVED_SEARCH_RESULTS_PATH = "suche";
+export const SAVED_SEARCH_RESULTS_PATH = "";
 export const MAX_SAVED_SEARCHES = 25;
-
 export interface SavedSearch {
   query: string;
+  state: SearchState;
   savedAt: string;
   lastViewedAt: string;
 }
-
-const MULTI_SPACE_REGEX = /\s+/g;
-
-/** Normalizes whitespace so equivalent queries are stored as one entry. */
 export function normalizeSavedSearchQuery(query: string): string {
-  return query.trim().replace(MULTI_SPACE_REGEX, " ");
+  return query.trim().replace(/\s+/g, " ");
 }
-
-function toComparableQuery(query: string): string {
-  return normalizeSavedSearchQuery(query).toLowerCase();
+type SearchInput = string | SearchState;
+export function toSearchState(value: SearchInput): SearchState {
+  return typeof value === "string"
+    ? parseSearchState(new URLSearchParams({ q: value }))
+    : parseSearchState(new URLSearchParams(serializeSearchState(value)));
 }
-
-export function isSameSavedSearchQuery(left: string, right: string): boolean {
-  return toComparableQuery(left) === toComparableQuery(right);
+function key(value: SearchInput): string {
+  const state = toSearchState(value);
+  state.q = state.q.toLocaleLowerCase("de-DE");
+  return serializeSearchState(state);
 }
-
-function isSavedSearch(value: unknown): value is SavedSearch {
-  if (!value || typeof value !== "object") return false;
-  const candidate = value as Partial<SavedSearch>;
-  return (
-    typeof candidate.query === "string" &&
-    typeof candidate.savedAt === "string" &&
-    (candidate.lastViewedAt === undefined ||
-      typeof candidate.lastViewedAt === "string")
-  );
+export function isSameSavedSearchQuery(
+  left: SearchInput,
+  right: SearchInput,
+): boolean {
+  return key(left) === key(right);
 }
-
-function toNormalizedSavedSearch(search: SavedSearch): SavedSearch | null {
-  const normalizedQuery = normalizeSavedSearchQuery(search.query);
-  if (!normalizedQuery) return null;
-  const savedAtDate = new Date(search.savedAt);
-  const normalizedSavedAt = Number.isNaN(savedAtDate.getTime())
-    ? new Date(0).toISOString()
-    : savedAtDate.toISOString();
-  const lastViewedAtDate = new Date(search.lastViewedAt ?? normalizedSavedAt);
-  return {
-    query: normalizedQuery,
-    savedAt: normalizedSavedAt,
-    lastViewedAt: Number.isNaN(lastViewedAtDate.getTime())
-      ? normalizedSavedAt
-      : lastViewedAtDate.toISOString(),
-  };
+function timestamp(value: unknown, fallback: string): string {
+  const date = typeof value === "string" ? new Date(value) : new Date(NaN);
+  return Number.isFinite(+date) ? date.toISOString() : fallback;
 }
-
-function sanitizeSavedSearches(searches: SavedSearch[]): SavedSearch[] {
-  const normalizedSearches = searches
-    .map(toNormalizedSavedSearch)
-    .filter((search): search is SavedSearch => Boolean(search))
-    .sort((a, b) => b.savedAt.localeCompare(a.savedAt));
-  const uniqueSearches: SavedSearch[] = [];
-  const seenQueries = new Set<string>();
-
-  for (const search of normalizedSearches) {
-    const queryKey = toComparableQuery(search.query);
-    if (seenQueries.has(queryKey)) continue;
-    seenQueries.add(queryKey);
-    uniqueSearches.push(search);
-
-    if (uniqueSearches.length >= MAX_SAVED_SEARCHES) {
-      break;
-    }
-  }
-
-  return uniqueSearches;
+export function sanitizeSavedSearches(searches: unknown[]): SavedSearch[] {
+  const seen = new Set<string>();
+  return searches
+    .flatMap((value) => {
+      if (!value || typeof value !== "object") return [];
+      const candidate = value as Partial<SavedSearch>;
+      if (typeof candidate.query !== "string") return [];
+      const state =
+        candidate.state && typeof candidate.state === "object"
+          ? toSearchState(candidate.state)
+          : toSearchState(candidate.query);
+      if (!serializeSearchState(state)) return [];
+      const savedAt = timestamp(candidate.savedAt, new Date(0).toISOString());
+      return [
+        {
+          query: state.q,
+          state,
+          savedAt,
+          lastViewedAt: timestamp(candidate.lastViewedAt, savedAt),
+        },
+      ];
+    })
+    .sort((a, b) => b.savedAt.localeCompare(a.savedAt))
+    .filter((search) => {
+      const id = key(search.state);
+      if (seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    })
+    .slice(0, MAX_SAVED_SEARCHES);
 }
-
 export function readSavedSearches(storage: Storage): SavedSearch[] {
   try {
-    const raw = storage.getItem(SAVED_SEARCHES_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return sanitizeSavedSearches(parsed.filter(isSavedSearch));
+    const parsed = JSON.parse(
+      storage.getItem(SAVED_SEARCHES_STORAGE_KEY) ?? "[]",
+    );
+    return Array.isArray(parsed) ? sanitizeSavedSearches(parsed) : [];
   } catch {
     return [];
   }
 }
-
 export function writeSavedSearches(
   storage: Storage,
   searches: SavedSearch[],
 ): boolean {
-  const normalizedSearches = sanitizeSavedSearches(searches);
   try {
     storage.setItem(
       SAVED_SEARCHES_STORAGE_KEY,
-      JSON.stringify(normalizedSearches),
+      JSON.stringify(sanitizeSavedSearches(searches)),
     );
     return true;
   } catch {
     return false;
   }
 }
-
 export function upsertSavedSearch(
   searches: SavedSearch[],
-  query: string,
-  now: Date = new Date(),
+  input: SearchInput,
+  now = new Date(),
 ): SavedSearch[] {
-  const normalizedQuery = normalizeSavedSearchQuery(query);
-  if (!normalizedQuery) return sanitizeSavedSearches(searches);
-
-  const existingSearch = searches.find((search) =>
-    isSameSavedSearchQuery(search.query, normalizedQuery),
-  );
-  const nextSearches = searches.filter(
-    (search) => !isSameSavedSearchQuery(search.query, normalizedQuery),
-  );
-  const nowIso = now.toISOString();
-  nextSearches.unshift({
-    query: normalizedQuery,
-    savedAt: existingSearch?.savedAt ?? nowIso,
-    lastViewedAt: nowIso,
-  });
-
-  return sanitizeSavedSearches(nextSearches);
+  const state = toSearchState(input);
+  if (!serializeSearchState(state)) return searches;
+  const existing = searches.find((s) => isSameSavedSearchQuery(s.state, state));
+  return sanitizeSavedSearches([
+    {
+      query: state.q,
+      state,
+      savedAt: existing?.savedAt ?? now.toISOString(),
+      lastViewedAt: existing?.lastViewedAt ?? now.toISOString(),
+    },
+    ...searches.filter((s) => !isSameSavedSearchQuery(s.state, state)),
+  ]);
 }
-
 export function markSavedSearchViewed(
   searches: SavedSearch[],
-  query: string,
-  now: Date = new Date(),
+  input: SearchInput,
+  now = new Date(),
 ): SavedSearch[] {
-  const normalizedQuery = normalizeSavedSearchQuery(query);
-  if (!normalizedQuery) return sanitizeSavedSearches(searches);
-
   return sanitizeSavedSearches(
-    searches.map((search) =>
-      isSameSavedSearchQuery(search.query, normalizedQuery)
-        ? { ...search, lastViewedAt: now.toISOString() }
-        : search,
+    searches.map((s) =>
+      isSameSavedSearchQuery(s.state, input)
+        ? { ...s, lastViewedAt: now.toISOString() }
+        : s,
     ),
   );
 }
-
-/** Advances a saved search checkpoint after its results page is opened. */
-export function markCurrentSavedSearchViewed(): void {
-  if (typeof window === "undefined") return;
-  const storage = getBrowserStorage();
-  if (!storage) return;
-
-  const query = new URLSearchParams(window.location.search).get(
-    SAVED_SEARCH_QUERY_PARAM,
-  );
-  if (!query) return;
-
-  const searches = readSavedSearches(storage);
-  if (!searches.some((search) => isSameSavedSearchQuery(search.query, query))) {
-    return;
-  }
-  writeSavedSearches(storage, markSavedSearchViewed(searches, query));
-}
-
 export function removeSavedSearch(
   searches: SavedSearch[],
-  query: string,
+  input: SearchInput,
 ): SavedSearch[] {
-  const normalizedQuery = normalizeSavedSearchQuery(query);
-  if (!normalizedQuery) return sanitizeSavedSearches(searches);
-
-  const nextSearches = searches.filter(
-    (search) => !isSameSavedSearchQuery(search.query, normalizedQuery),
-  );
-  return sanitizeSavedSearches(nextSearches);
+  return searches.filter((s) => !isSameSavedSearchQuery(s.state, input));
 }
-
-export function buildSavedSearchUrl(baseUrl: string, query: string): string {
-  const normalizedBaseUrl = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
-  const resultsPageUrl = `${normalizedBaseUrl}${SAVED_SEARCH_RESULTS_PATH}`;
-  const normalizedQuery = normalizeSavedSearchQuery(query);
-  if (!normalizedQuery) return resultsPageUrl;
-  const params = new URLSearchParams({
-    [SAVED_SEARCH_QUERY_PARAM]: normalizedQuery,
-  });
-  return `${resultsPageUrl}?${params.toString()}`;
+export function buildSavedSearchUrl(
+  baseUrl: string,
+  input: SearchInput,
+): string {
+  const params = serializeSearchState(toSearchState(input));
+  return `${baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`}${params ? `?${params}` : ""}`;
 }
-
 export function getBrowserStorage(): Storage | null {
   if (typeof window === "undefined") return null;
   try {

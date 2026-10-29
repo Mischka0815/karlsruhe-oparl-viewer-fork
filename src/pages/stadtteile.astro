@@ -4,12 +4,17 @@ import PageContainer from "../components/PageContainer.astro";
 import StadtteilHint from "../components/StadtteilHint.astro";
 import {
   getAvailableDistricts,
+  getOrtschaften,
   getPaperCountsByDistrict,
 } from "../shared/data";
+import { getDistrictOrtschaft } from "../shared/meeting-presentation";
 import { buildDistrictUrl } from "../shared/utils";
 
-const districtNames = await getAvailableDistricts();
-const paperCountsByDistrict = await getPaperCountsByDistrict();
+const [districtNames, paperCountsByDistrict, ortschaften] = await Promise.all([
+  getAvailableDistricts(),
+  getPaperCountsByDistrict(),
+  getOrtschaften(),
+]);
 
 const baseUrl = import.meta.env.BASE_URL;
 ---
@@ -34,6 +39,11 @@ const baseUrl = import.meta.env.BASE_URL;
           <span class="stadtteil-count">
             {paperCountsByDistrict.get(districtName) ?? 0} Vorlagen
           </span>
+          {/* Ortschaften have their own council, whose sittings the district
+              page links to. */}
+          {getDistrictOrtschaft(districtName, ortschaften.all) && (
+            <span class="stadtteil-kind">Ortschaft</span>
+          )}
         </a>
       ))}
     </div>
@@ -79,14 +89,36 @@ const baseUrl = import.meta.env.BASE_URL;
     color: var(--color-text);
   }
 
+  .stadtteil-kind {
+    width: fit-content;
+    margin-top: 2px;
+    padding: 0 7px;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    color: var(--color-text-muted);
+    font-size: 0.72rem;
+  }
+
   .stadtteil-count {
     font-size: 0.85rem;
     color: var(--color-text-muted);
   }
 
+  /* Two columns on phones: 28 full-width cards were three screens of
+     scrolling for a list of names. */
   @media screen and (max-width: 768px) {
     .stadtteile-grid {
-      grid-template-columns: 1fr;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .stadtteil-card {
+      padding: 12px 14px;
+    }
+
+    .stadtteil-name {
+      font-size: 1rem;
+      hyphens: auto;
     }
   }
 </style>

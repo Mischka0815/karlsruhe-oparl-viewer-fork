@@ -60,10 +60,7 @@ function itemUrl(item: NavigationItem): string {
         </ul>
       </nav>
 
-      <nav
-        class="utility-navigation"
-        aria-label="Suche und persönliche Inhalte"
-      >
+      <nav class="utility-navigation" aria-label="Persönliche Inhalte">
         <p class="menu-group-label">Werkzeuge</p>
         <ul>
           {utilityNavigation.map((item) => {
@@ -76,26 +73,14 @@ function itemUrl(item: NavigationItem): string {
                   class="utility-link"
                   aria-current={isActive ? "page" : undefined}
                 >
-                  {item.path === "" ? (
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="18"
-                      height="18"
-                      aria-hidden="true"
-                    >
-                      <circle cx="11" cy="11" r="7" />
-                      <path d="m20 20-4-4" />
-                    </svg>
-                  ) : (
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="18"
-                      height="18"
-                      aria-hidden="true"
-                    >
-                      <path d="M6 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18l-6-4-6 4V4Z" />
-                    </svg>
-                  )}
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    aria-hidden="true"
+                  >
+                    <path d="M6 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18l-6-4-6 4V4Z" />
+                  </svg>
                   <span>{item.label}</span>
                 </a>
               </li>

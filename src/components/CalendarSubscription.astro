@@ -12,40 +12,41 @@ const webcalUrl = feedUrl.replace(/^https?:\/\//, "webcal://");
 const googleUrl = `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(webcalUrl)}`;
 ---
 
+{/* One visible action. Google and the raw address are for fewer readers, so
+    they open from a small disclosure instead of taking two more rows above
+    the meeting list. */}
 <div class="calendar-subscription">
-  <div class="calendar-subscription-links">
-    <a class="calendar-subscribe" href={webcalUrl}>
-      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-        <rect x="3" y="5" width="18" height="16" rx="2"></rect>
-        <path d="M16 3v4M8 3v4M3 10h18M12 13v5M9.5 15.5h5"></path>
-      </svg>
-      Kalender abonnieren
-    </a>
-    <a
-      class="calendar-google"
-      href={googleUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      In Google Kalender öffnen
-      <span class="visually-hidden"> (öffnet in neuem Tab)</span>
-    </a>
-  </div>
-  <div class="calendar-url">
-    <label for="calendar-feed-url">Adresse für andere Kalender-Apps</label>
-    <div class="calendar-url-row">
-      <input
-        id="calendar-feed-url"
-        type="url"
-        value={feedUrl}
-        readonly
-        data-calendar-feed-url
-      />
-      <button type="button" data-calendar-copy hidden>
-        Kopieren
-      </button>
+  <a class="calendar-subscribe" href={webcalUrl}>
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+      <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+      <path d="M16 3v4M8 3v4M3 10h18M12 13v5M9.5 15.5h5"></path>
+    </svg>
+    Kalender abonnieren
+  </a>
+  <details class="calendar-more" data-calendar-more>
+    <summary>Andere Kalender-Apps</summary>
+    <div class="calendar-more-panel">
+      <a href={googleUrl} target="_blank" rel="noopener noreferrer">
+        In Google Kalender öffnen
+        <span class="visually-hidden"> (öffnet in neuem Tab)</span>
+      </a>
+      <div class="calendar-url">
+        <label for="calendar-feed-url">Adresse zum Einfügen</label>
+        <div class="calendar-url-row">
+          <input
+            id="calendar-feed-url"
+            type="url"
+            value={feedUrl}
+            readonly
+            data-calendar-feed-url
+          />
+          <button type="button" data-calendar-copy hidden>
+            Kopieren
+          </button>
+        </div>
+      </div>
     </div>
-  </div>
+  </details>
 </div>
 
 <script>
@@ -57,6 +58,23 @@ const googleUrl = `https://calendar.google.com/calendar/r?cid=${encodeURICompone
       "[data-calendar-copy]",
     );
     if (!input || !button) return;
+
+    const more = container.querySelector<HTMLDetailsElement>(
+      "[data-calendar-more]",
+    );
+    if (more) {
+      // The panel floats over the list, so it closes the way a menu does.
+      document.addEventListener("click", (event) => {
+        if (more.open && !more.contains(event.target as Node)) {
+          more.open = false;
+        }
+      });
+      more.addEventListener("keydown", (event) => {
+        if (event.key !== "Escape" || !more.open) return;
+        more.open = false;
+        more.querySelector("summary")?.focus();
+      });
+    }
 
     input.addEventListener("focus", () => input.select());
     if (!navigator.clipboard) return;
@@ -76,11 +94,6 @@ const googleUrl = `https://calendar.google.com/calendar/r?cid=${encodeURICompone
 
 <style>
   .calendar-subscription {
-    display: grid;
-    gap: 12px;
-  }
-
-  .calendar-subscription-links {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -92,12 +105,12 @@ const googleUrl = `https://calendar.google.com/calendar/r?cid=${encodeURICompone
     align-items: center;
     gap: 7px;
     width: fit-content;
-    padding: 8px 12px;
+    padding: 7px 12px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius);
     background: var(--color-primary);
     color: var(--color-text);
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     font-weight: 700;
     text-decoration: none;
   }
@@ -115,7 +128,62 @@ const googleUrl = `https://calendar.google.com/calendar/r?cid=${encodeURICompone
     stroke-width: 2;
   }
 
-  .calendar-google {
+  .calendar-more {
+    position: relative;
+  }
+
+  .calendar-more summary {
+    color: var(--color-link);
+    font-size: 0.86rem;
+    cursor: pointer;
+    list-style: none;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .calendar-more summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .calendar-more summary:focus-visible {
+    outline: 2px solid var(--color-link);
+    outline-offset: 2px;
+  }
+
+  .calendar-more-panel {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 8px);
+    left: 0;
+    display: grid;
+    gap: 12px;
+    width: min(26rem, calc(100vw - 32px));
+    padding: 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: #fff;
+    box-shadow: var(--shadow-card);
+  }
+
+  /* On phones the summary may sit anywhere in the row; anchor to the right
+     edge so the panel never runs off-screen. */
+  @media screen and (max-width: 540px) {
+    .calendar-more {
+      position: static;
+    }
+
+    .calendar-subscription {
+      position: relative;
+    }
+
+    .calendar-more-panel {
+      left: 0;
+      right: 0;
+      width: auto;
+    }
+  }
+
+  .calendar-more-panel a {
     color: var(--color-link);
     font-size: 0.9rem;
     font-weight: 700;
@@ -131,7 +199,6 @@ const googleUrl = `https://calendar.google.com/calendar/r?cid=${encodeURICompone
   .calendar-url-row {
     display: flex;
     gap: 8px;
-    max-width: 640px;
   }
 
   .calendar-url input {

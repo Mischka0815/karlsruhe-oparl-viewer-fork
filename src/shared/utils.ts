@@ -1,4 +1,5 @@
 import { OFFICIAL_RIS_BASE_URL, SYNDICATION_BASE_URL } from "./constants.ts";
+import { MEETING_FILTER_QUERY_PARAMETERS } from "./meeting-filter-definitions.ts";
 
 /**
  * Trims each entry, drops empties, and de-duplicates — accepting a single
@@ -28,13 +29,14 @@ export const PAPERS_YEAR_QUERY_PARAMETER = "year";
 export function buildPapersUrl(baseUrl: string, year?: string | null): string {
   const normalizedYear = year?.trim() ?? "";
   if (!normalizedYear) {
-    return `${baseUrl}vorlagen`;
+    return baseUrl;
   }
 
   const params = new URLSearchParams([
-    [PAPERS_YEAR_QUERY_PARAMETER, normalizedYear],
+    ["from", `${normalizedYear}-01-01`],
+    ["to", `${normalizedYear}-12-31`],
   ]);
-  return `${baseUrl}vorlagen?${params.toString()}`;
+  return `${baseUrl}?${params.toString()}`;
 }
 
 export function buildPaperDetailUrl(
@@ -94,6 +96,17 @@ export function buildOfficialMeetingUrl(id: string): string {
 /** The subscribable calendar with every upcoming meeting. */
 export function buildMeetingCalendarFeedUrl(baseUrl: string): string {
   return `${baseUrl}sitzungen/kalender.ics`;
+}
+
+/** Upcoming meetings filtered to one Ortschaftsrat. */
+export function buildOrtschaftMeetingsUrl(
+  baseUrl: string,
+  ortschaft: string,
+): string {
+  const params = new URLSearchParams([
+    [MEETING_FILTER_QUERY_PARAMETERS.district, ortschaft],
+  ]);
+  return `${baseUrl}sitzungen?${params}`;
 }
 
 const DATE_TIME_FORMATTER = new Intl.DateTimeFormat("de-DE", {

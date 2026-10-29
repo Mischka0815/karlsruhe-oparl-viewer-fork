@@ -123,10 +123,11 @@ enumerating the directory.
 - `src/layouts/Layout.astro` provides page shell and global styles.
 - `src/components/SiteNavigation.astro` owns nav markup/styles/mobile behavior.
 - `src/components/PaperListPage.astro` + `src/components/PageContainer.astro` are shared list-page wrappers.
-- `src/components/PaperList.astro` renders paper cards and summary text.
+- `src/components/SearchPanel.astro` is the one search-and-browse UI (home, district and faction pages).
 - `src/components/FilterSelect.astro` renders each filter dropdown.
-- `src/shared/paper-list-controller.ts` contains client-side filtering and incremental-loading logic.
-- `src/shared/paper-filters.ts` builds filter values/options from paper, meeting, and organization data.
+- `src/shared/search-panel-controller.ts` runs Pagefind queries, renders result cards in batches, and syncs URL state.
+- `src/shared/search-state.ts` defines the normalized search state (text, filters, sort) shared by URLs and saved searches.
+- `src/shared/search-index.ts` builds per-paper filter values and options for the Pagefind index. See [SEARCH.md](SEARCH.md).
 
 ## Deployment
 

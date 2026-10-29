@@ -9,6 +9,10 @@ import {
   buildFactionUrl,
   formatDateShort,
 } from "../shared/utils";
+import {
+  isBulkImportTimestamp,
+  PLACEHOLDER_OFFICES,
+} from "../shared/paper-presentation";
 
 interface Props {
   paper: Paper;
@@ -20,14 +24,18 @@ const { paper, organizations, submitters } = Astro.props;
 const baseUrl = import.meta.env.BASE_URL;
 
 /** Search result cards read these as Pagefind meta — keep the names in sync
- * with `search-panel-controller.ts`. Reference, type, and date carry their meta
- * in `PaperHeader.astro`, where they are actually displayed. */
+ * with `search-panel-controller.ts`. Type and date carry their meta in
+ * `PaperHeader.astro`; the rows here are `data-pagefind-ignore`. */
 const pagefindModifiedSortAtt = `modified:${new Date(paper.modified).toISOString()}`;
 
 const organizationNames = organizations
   .map((organization) => organization?.name)
-  .filter(Boolean)
+  .filter((name) => name && !PLACEHOLDER_OFFICES.has(name))
   .join(", ");
+const paperDate = formatDateShort(paper.date);
+/* The bulk import stamped most papers with the same day; printing it as
+   "Letzte Änderung" would claim an edit nobody made. */
+const showModified = !isBulkImportTimestamp(paper.modified);
 
 /* Districts and factions each have a list page of their own, so every value
    here doubles as the entry point to "what else came from this corner of the
@@ -54,7 +62,7 @@ const linkedFacts: {
       href: buildDistrictUrl(baseUrl, name),
     })),
   },
-];
+].filter(({ links }) => links.length > 0);
 ---
 
 <section class="section-card" aria-labelledby="paper-facts">
@@ -62,6 +70,7 @@ const linkedFacts: {
     Eckdaten
   </h2>
 
+  {/* Only facts the paper has: a row of "Keine Angaben" answers nothing. */}
   <dl class="facts">
     {/* The paper's primary identifier, and the only place it appears as page
         text — so this is what makes a search for "2025/0152" resolve. The
@@ -71,49 +80,70 @@ const linkedFacts: {
       {paper.reference}
     </dd>
 
-    <dt>Letzte Änderung</dt>
-    <dd>
-      <time
-        datetime={paper.modified}
-        data-pagefind-meta="paper-modified[datetime]"
-        data-pagefind-sort={pagefindModifiedSortAtt}
-      >
-        {formatDateShort(paper.modified)}
-      </time>
-      {/* Literal meta value — keeps the raw timestamp out of excerpts. */}
-      <span data-pagefind-meta={`paper-created:${paper.created}`}></span>
-    </dd>
+    {/* Date and type are filters, not search terms: ignored so that every
+        "Antrag" page does not match a search for "Antrag" on this label. Their
+        Pagefind meta stays on the empty spans in `PaperHeader`. */}
+    {paper.paperType && (
+      <Fragment>
+        <dt data-pagefind-ignore>Art</dt>
+        <dd data-pagefind-ignore>{paper.paperType}</dd>
+      </Fragment>
+    )}
+    {paperDate && (
+      <Fragment>
+        <dt data-pagefind-ignore>Datum</dt>
+        <dd data-pagefind-ignore>
+          <time datetime={paper.date}>{paperDate}</time>
+        </dd>
+      </Fragment>
+    )}
 
-    <dt>Unter Leitung von</dt>
-    <dd
-      data-pagefind-meta={organizationNames ? "paper-organizations" : undefined}
-      class:list={[!organizationNames && "fact-empty"]}
-    >
-      {organizationNames || "Keine Angaben"}
-    </dd>
+    {showModified && (
+      <Fragment>
+        <dt>Letzte Änderung</dt>
+        <dd>
+          <time
+            datetime={paper.modified}
+            data-pagefind-meta="paper-modified[datetime]"
+            data-pagefind-sort={pagefindModifiedSortAtt}
+          >
+            {formatDateShort(paper.modified)}
+          </time>
+        </dd>
+      </Fragment>
+    )}
+
+    {organizationNames && (
+      <Fragment>
+        <dt>Unter Leitung von</dt>
+        <dd data-pagefind-meta="paper-organizations">{organizationNames}</dd>
+      </Fragment>
+    )}
 
     {linkedFacts.map(({ term, meta, links }) => (
       <Fragment>
         <dt>{term}</dt>
-        <dd
-          data-pagefind-meta={links.length > 0 ? meta : undefined}
-          class:list={[links.length === 0 && "fact-empty"]}
-        >
-          {links.length > 0 ? (
-            <ul class="fact-links">
-              {links.map(({ name, href }) => (
-                <li>
-                  {href ? <a href={href}>{name}</a> : <span>{name}</span>}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            "Keine Angaben"
-          )}
+        <dd data-pagefind-meta={meta}>
+          <ul class="fact-links">
+            {links.map(({ name, href }) => (
+              <li>{href ? <a href={href}>{name}</a> : <span>{name}</span>}</li>
+            ))}
+          </ul>
         </dd>
       </Fragment>
     ))}
   </dl>
+
+  {/* Literal meta values — no visible text, no excerpt. `paper-modified`
+      and its sort key ride here when the date is the import stamp, so result
+      cards and the "changed" sort still see it (they treat it as a fallback). */}
+  <span data-pagefind-meta={`paper-created:${paper.created}`}></span>
+  {!showModified && (
+    <span
+      data-pagefind-meta={`paper-modified:${paper.modified}`}
+      data-pagefind-sort={pagefindModifiedSortAtt}
+    ></span>
+  )}
 </section>
 
 <style>
@@ -124,7 +154,7 @@ const linkedFacts: {
   .facts {
     margin: 0;
     display: grid;
-    gap: 14px;
+    gap: 12px;
   }
 
   dt {
@@ -143,11 +173,6 @@ const linkedFacts: {
   .fact-reference {
     font-weight: 700;
     letter-spacing: 0.03em;
-  }
-
-  .fact-empty {
-    color: var(--color-text-muted);
-    font-style: italic;
   }
 
   /* Chips rather than a comma list: the values are links now, and adjacent

@@ -1,5 +1,6 @@
 ---
 import type { ResolvedAuxiliaryFile } from "../shared/types";
+import { getMeaningfulModified } from "../shared/paper-presentation";
 import {
   formatDateLong,
   getOParlEntityId,
@@ -35,6 +36,7 @@ const { auxiliaryFiles } = Astro.props;
           ? getOParlEntityId(content?.id ?? "")
           : undefined;
         const fileText = extractedText || "Kein Text verfügbar";
+        const modified = getMeaningfulModified(file);
 
         return (
           <li class="file-item" data-id={file.id}>
@@ -66,7 +68,9 @@ const { auxiliaryFiles } = Astro.props;
 
               <div class="file-metadata">
                 <span>Erstellt: {formatDateLong(file.created)}</span>
-                <span>Zuletzt geändert: {formatDateLong(file.modified)}</span>
+                {modified && (
+                  <span>Zuletzt geändert: {formatDateLong(modified)}</span>
+                )}
               </div>
             </div>
 
@@ -172,21 +176,42 @@ const { auxiliaryFiles } = Astro.props;
   }
 
   .file-text-details {
-    margin-top: 10px;
+    margin-top: 4px;
   }
 
+  /* A secondary action, so a quiet link with a disclosure caret — four solid
+     buttons were the loudest thing on the page. */
   .file-text-toggle {
     display: inline-flex;
     align-items: center;
-    padding: 8px 12px;
-    font-size: 0.875rem;
-    color: #fff;
-    background-color: var(--color-link);
-    border-radius: 4px;
+    gap: 6px;
+    min-height: 32px;
+    font-size: 0.85rem;
+    color: var(--color-link);
     cursor: pointer;
     list-style: none;
     user-select: none;
-    transition: background-color 0.2s;
+  }
+
+  .file-text-toggle::before {
+    content: "";
+    width: 5px;
+    height: 5px;
+    margin-top: -2px;
+    border-right: 1.5px solid;
+    border-bottom: 1.5px solid;
+    transform: rotate(-45deg);
+    transition: transform 0.15s;
+  }
+
+  .file-text-details[open] .file-text-toggle::before {
+    margin-top: -4px;
+    transform: rotate(45deg);
+  }
+
+  .file-text-toggle:focus-visible {
+    outline: 2px solid var(--color-link);
+    outline-offset: 2px;
   }
 
   .file-text-toggle::-webkit-details-marker {
@@ -194,7 +219,9 @@ const { auxiliaryFiles } = Astro.props;
   }
 
   .file-text-toggle:hover {
-    background-color: var(--color-link-hover);
+    color: var(--color-link-hover);
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
 
   .toggle-hide,

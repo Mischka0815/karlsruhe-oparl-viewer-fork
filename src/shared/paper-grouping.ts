@@ -1,11 +1,11 @@
-import { BULK_MODIFIED_DATE } from "./constants";
+import { BULK_MODIFIED_DATE } from "./constants.ts";
 import type { Paper } from "./types";
 import {
   compareDateStrings,
   formatDateLong,
   formatMonthLong,
   getDateTimestamp,
-} from "./utils";
+} from "./utils.ts";
 
 /**
  * Ordering and grouping for the paper list.

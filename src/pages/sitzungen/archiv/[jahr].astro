@@ -62,12 +62,6 @@ const archiveUrl = buildMeetingArchiveUrl(baseUrl);
       ]}
     />
     <h1 class="page-header">Sitzungen {year}</h1>
-    <div class="page-intro" data-pagefind-ignore>
-      <p>
-        {count} vergangene Sitzungen der Karlsruher Gremien aus dem Jahr {year}.
-      </p>
-    </div>
-
     <nav class="year-nav" aria-label="Jahre" data-pagefind-ignore>
       {olderYear ? (
         <a href={buildMeetingArchiveYearUrl(baseUrl, olderYear)} rel="prev">
@@ -107,21 +101,12 @@ const archiveUrl = buildMeetingArchiveUrl(baseUrl);
     max-width: 1000px;
   }
 
-  .page-intro {
-    margin: 0 auto 8px;
-    color: var(--color-text-muted);
-  }
-
-  .page-intro p {
-    margin: 0;
-  }
-
   .year-nav {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    margin-top: 14px;
+    margin: 0 0 16px;
     font-size: 0.9rem;
   }
 

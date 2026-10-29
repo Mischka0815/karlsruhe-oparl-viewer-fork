@@ -4,9 +4,11 @@ interface Props {
   label: string;
   options: ReadonlyArray<string | { value: string; label: string }>;
   emptyLabel?: string;
+  /** Short explanation shown under the select and linked as its description. */
+  hint?: string;
 }
 
-const { id, label, options, emptyLabel = "Alle" } = Astro.props;
+const { id, label, options, emptyLabel = "Alle", hint } = Astro.props;
 
 const normalizedOptions = options.map((option) =>
   typeof option === "string" ? { value: option, label: option } : option,
@@ -15,12 +17,17 @@ const normalizedOptions = options.map((option) =>
 
 <div class="filter-group">
   <label for={id}>{label}</label>
-  <select id={id}>
+  <select id={id} aria-describedby={hint ? `${id}-hint` : undefined}>
     <option value="">{emptyLabel}</option>
     {normalizedOptions.map(({ value, label: optionLabel }) => (
       <option value={value}>{optionLabel}</option>
     ))}
   </select>
+  {hint && (
+    <p class="filter-hint" id={`${id}-hint`}>
+      {hint}
+    </p>
+  )}
 </div>
 
 <style>
@@ -58,6 +65,13 @@ const normalizedOptions = options.map((option) =>
     color: var(--color-text);
     background: #fff;
     cursor: pointer;
+  }
+
+  .filter-hint {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+    line-height: 1.4;
   }
 
   .filter-group select:focus {

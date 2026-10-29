@@ -3,6 +3,7 @@ import {
   getEffectiveMeetingEnd,
   getOParlEntityId,
 } from "./utils.ts";
+import { formatMeetingName } from "./meeting-presentation.ts";
 import type { Meeting } from "./types";
 
 const encoder = new TextEncoder();
@@ -101,7 +102,7 @@ function buildMeetingEventLines(
     `DTEND:${formatCalendarDate(
       getEffectiveMeetingEnd(meeting.start, meeting.end),
     )}`,
-    `SUMMARY:${escapeCalendarText(meeting.name)}`,
+    `SUMMARY:${escapeCalendarText(formatMeetingName(meeting.name))}`,
     meeting.location?.description
       ? `LOCATION:${escapeCalendarText(meeting.location.description)}`
       : undefined,

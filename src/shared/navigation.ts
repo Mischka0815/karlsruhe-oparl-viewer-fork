@@ -1,5 +1,5 @@
 export type NavigationSection =
-  "search" | "papers" | "meetings" | "districts" | "submitters" | "saved";
+  "search" | "meetings" | "districts" | "submitters" | "saved";
 
 export interface NavigationItem {
   section: NavigationSection;
@@ -8,10 +8,11 @@ export interface NavigationItem {
 }
 
 export const primaryNavigation: NavigationItem[] = [
+  // Home is the one search-and-browse page; this keeps it in the main menu.
   {
-    section: "papers",
+    section: "search",
     label: "Vorlagen",
-    path: "vorlagen",
+    path: "",
   },
   {
     section: "meetings",
@@ -31,11 +32,6 @@ export const primaryNavigation: NavigationItem[] = [
 ];
 
 export const utilityNavigation: NavigationItem[] = [
-  {
-    section: "search",
-    label: "Suche",
-    path: "",
-  },
   {
     section: "saved",
     label: "Gespeichert",

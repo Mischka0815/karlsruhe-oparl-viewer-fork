@@ -1,436 +1,530 @@
 import {
   loadPagefindModule,
-  type PagefindModule,
-  type PagefindResultData,
+  searchPapers,
   type PagefindSearchResult,
+  type PagefindResultData,
 } from "./pagefind-client";
 import {
-  PAGEFIND_DATE_FIRST_SORT,
-  PAGEFIND_MODIFIED_FIRST_SORT,
-  SEARCH_INPUT_SELECTOR,
-  SEARCH_PANEL_SELECTOR,
-} from "./pagefind-config";
+  effectiveSort,
+  dateRangeLabel,
+  filterLabels,
+  referenceKey,
+  filterFields,
+  invalidDateRange,
+  parseSearchState,
+  serializeSearchState,
+  type FilterField,
+  type SearchState,
+} from "./search-state";
 import {
-  normalizeSavedSearchQuery,
-  SAVED_SEARCH_QUERY_PARAM,
+  getBrowserStorage,
+  readSavedSearches,
+  writeSavedSearches,
+  upsertSavedSearch,
+  markSavedSearchViewed,
+  isSameSavedSearchQuery,
 } from "./saved-searches";
-import { rankResultsByPaperDate } from "./search-ranking";
+import { BULK_MODIFIED_DATE } from "./constants";
+import {
+  excerptBodyStart,
+  compactDistricts,
+  contextNames,
+  startsMidSentence,
+  followUpBase,
+  excerptLeadStart,
+  summaryFromContent,
+  leadOffice,
+} from "./search-presentation";
 import { formatDateShort } from "./utils";
-
-/**
- * Main search blends relevance with paper date; `date` is the plain
- * newest-paper-first order; saved-search feeds use edits.
- */
-export type SearchSortMode = "relevance" | "date" | "modified";
-
-const SEARCH_SORT_MODES: readonly SearchSortMode[] = [
-  "relevance",
-  "date",
-  "modified",
-];
-
-function parseSortMode(value: string | undefined): SearchSortMode {
-  return SEARCH_SORT_MODES.find((mode) => mode === value) ?? "relevance";
-}
-
+export type { SearchSortMode } from "./search-state";
 export const SEARCH_RESULT_BATCH_SIZE = 20;
-const SEARCH_DEBOUNCE_MS = 160;
-const MIN_QUERY_LENGTH = 2;
-const LOAD_AHEAD_ROOT_MARGIN = "600px";
-/** Words of context per excerpt — the default (30) leaves cards looking thin. */
-const EXCERPT_LENGTH = 45;
-
-const META_EMPTY_VALUES = new Set(["", "Keine Angaben", "-"]);
-
-interface SearchPanelElements {
-  root: HTMLElement;
-  input: HTMLInputElement;
-  clearButton: HTMLButtonElement | null;
-  status: HTMLElement;
-  list: HTMLElement;
-  loadTrigger: HTMLElement;
-  empty: HTMLElement;
-  sortButtons: HTMLButtonElement[];
+function element(tag: string, className: string, text: string): HTMLElement {
+  const el = document.createElement(tag);
+  el.className = className;
+  el.textContent = text;
+  return el;
 }
-
-interface SearchPanelContext extends SearchPanelElements {
-  baseUrl: string;
-  sortMode: SearchSortMode;
-  results: PagefindSearchResult[];
-  renderedCount: number;
-  query: string;
-  searchToken: number;
-}
-
-function getSortLabel(sortMode: SearchSortMode): string {
-  switch (sortMode) {
-    case "modified":
-      return "sortiert nach letzter Änderung";
-    case "date":
-      return "sortiert nach Vorlagendatum, neueste zuerst";
-    default:
-      return "sortiert nach Relevanz und Vorlagendatum";
+/** Remove the first `count` characters of text, keeping the markup intact. */
+function dropLeadingText(el: HTMLElement, count: number): void {
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  let node: Node | null;
+  while (count > 0 && (node = walker.nextNode())) {
+    const length = node.textContent?.length ?? 0;
+    node.textContent = node.textContent!.slice(Math.min(count, length));
+    count -= length;
   }
 }
-
-function getMeaningfulValue(value: string | undefined): string | undefined {
-  const normalized = value?.trim() ?? "";
-  return META_EMPTY_VALUES.has(normalized) ? undefined : normalized;
-}
-
-function createElement(
-  tagName: string,
-  className: string,
-  text?: string,
-): HTMLElement {
-  const element = document.createElement(tagName);
-  element.className = className;
-  if (text !== undefined) element.textContent = text;
-  return element;
-}
-
-function buildMetaChips(meta: Record<string, string | undefined>): string[] {
-  const reference = getMeaningfulValue(meta["paper-reference"]);
-  const paperType = getMeaningfulValue(meta["paper-type"]);
-  const date = formatDateShort(getMeaningfulValue(meta["paper-date"]));
-  const organizations = getMeaningfulValue(meta["paper-organizations"]);
-  const submitters = getMeaningfulValue(meta["paper-submitters"]);
-
-  return [
-    reference,
-    paperType,
-    date || undefined,
-    organizations,
-    submitters,
-  ].filter((value): value is string => Boolean(value));
-}
-
-function buildMetaLine(
-  meta: Record<string, string | undefined>,
-  sortMode: SearchSortMode,
-): HTMLElement | undefined {
-  const chips = buildMetaChips(meta);
-  if (chips.length === 0) return undefined;
-
-  const date = formatDateShort(getMeaningfulValue(meta["paper-date"]));
-  const metaLine = createElement("span", "search-result-meta");
-  for (const chip of chips) {
-    const element = createElement("span", "search-result-chip", chip);
-    // Point at the value the list is ordered by, as the footer does for edits.
-    if (sortMode === "date" && date && chip === date) {
-      element.dataset.emphasis = "date";
-    }
-    metaLine.append(element);
-  }
-  return metaLine;
-}
-
-function buildResultCard(
+/** Pagefind's highlighted excerpt when a body match remains, otherwise the AI
+ * summary; one muted line either way, so cards stay uniform. */
+function cardText(
   data: PagefindResultData,
-  sortMode: SearchSortMode,
-): HTMLLIElement {
+  state: SearchState,
+): HTMLElement | undefined {
   const meta = data.meta ?? {};
-  const item = document.createElement("li");
-  item.className = "search-result";
-
+  if (
+    state.q &&
+    data.excerpt &&
+    referenceKey(state.q) !== referenceKey(meta["paper-reference"] ?? "")
+  ) {
+    const excerpt = element("span", "search-result-excerpt", "");
+    // Pagefind supplies escaped document text with mark tags. Remove only a
+    // leading repeated title / interface labels; retain actual body matches.
+    excerpt.innerHTML = data.excerpt;
+    dropLeadingText(
+      excerpt,
+      excerptBodyStart(excerpt.textContent ?? "", meta.title ?? ""),
+    );
+    const mark = [...excerpt.querySelectorAll("mark")].find((m) =>
+      m.textContent?.trim(),
+    );
+    if (mark) {
+      // The excerpt is clamped to two lines; start shortly before the first
+      // highlight so it is not cut off on narrow screens.
+      const range = document.createRange();
+      range.setStart(excerpt, 0);
+      range.setEndBefore(mark);
+      const text = excerpt.textContent ?? "";
+      dropLeadingText(excerpt, excerptLeadStart(text, range.toString().length));
+      if (startsMidSentence(excerpt.textContent ?? "")) excerpt.prepend("… ");
+      return excerpt;
+    }
+  }
+  const summary = summaryFromContent(data.content ?? "", data.anchors ?? []);
+  if (!summary) return undefined;
+  const text = element("span", "search-result-excerpt", "");
+  text.title = "KI-generierte Zusammenfassung – kann Fehler enthalten";
+  // "KI" stays visible; the hidden rest completes "KI-Zusammenfassung:".
+  const badge = element("span", "search-result-ai", "KI");
+  badge.append(element("span", "visually-hidden", "-Zusammenfassung: "));
+  text.append(badge, summary);
+  return text;
+}
+function card(data: PagefindResultData, state: SearchState): HTMLElement {
+  const meta = data.meta ?? {};
+  const li = element("li", "search-result", "");
   const link = document.createElement("a");
   link.className = "search-result-link";
   link.href = data.url ?? "#";
-
   link.append(
-    createElement(
+    element("span", "search-result-title", meta.title ?? "Ohne Titel"),
+  );
+  const modified = meta["paper-modified"] ?? "";
+  const date =
+    effectiveSort(state) === "modified" &&
+    !modified.startsWith(BULK_MODIFIED_DATE)
+      ? `Geändert am ${formatDateShort(modified)}`
+      : `Vorlage vom ${formatDateShort(meta["paper-date"]) || "unbekannten Datum"}`;
+  const reference = meta["paper-reference"] ?? "";
+  const base = followUpBase(reference);
+  const identifiers = element("span", "search-result-identifiers", "");
+  if (reference)
+    identifiers.append(
+      element("span", "search-result-reference", reference),
+      " · ",
+    );
+  identifiers.append(
+    [base ? "Folgevorlage" : "", date].filter(Boolean).join(" · "),
+  );
+  if (base) identifiers.title = `Folgevorlage zu ${base}`;
+  link.append(identifiers);
+  const text = cardText(data, state);
+  if (text) link.append(text);
+  const districts = meta["paper-districts"]?.trim() ?? "";
+  const faction = contextNames(meta["paper-submitters"] ?? "").join(", ");
+  const office = faction
+    ? ""
+    : leadOffice(meta["paper-organizations"] ?? "", meta["paper-type"] ?? "");
+  const origin = faction || office;
+  if (districts || origin) {
+    // Who the paper comes from is the one fixed point to scan for, so it gets
+    // the card's only pill; districts stay plain text beside it.
+    const context = element(
       "span",
-      "search-result-title",
-      getMeaningfulValue(meta.title) ?? "Ohne Titel",
-    ),
-  );
-
-  const metaLine = buildMetaLine(meta, sortMode);
-  if (metaLine) link.append(metaLine);
-
-  if (data.excerpt) {
-    const excerpt = createElement("span", "search-result-excerpt");
-    // Pagefind escapes indexed content and only adds <mark> highlights itself.
-    excerpt.innerHTML = data.excerpt;
-    link.append(excerpt);
-  }
-
-  const districts = getMeaningfulValue(meta["paper-districts"]);
-  const modified = formatDateShort(getMeaningfulValue(meta["paper-modified"]));
-  const footerParts = [
-    districts ? `Stadtteile: ${districts}` : undefined,
-    modified ? `Aktualisiert am ${modified}` : undefined,
-  ].filter(Boolean);
-
-  if (footerParts.length > 0) {
-    const footer = createElement(
-      "span",
-      "search-result-footer",
-      footerParts.join(" · "),
+      "search-result-context",
+      districts ? compactDistricts(districts) : "",
     );
-    if (sortMode === "modified" && modified) {
-      footer.dataset.emphasis = "modified";
+    if (origin) context.append(element("span", "search-result-origin", origin));
+    context.title = [
+      districts ? `Stadtteile (Zuordnungen und Erwähnungen): ${districts}` : "",
+      faction ? `Eingereicht von: ${faction}` : "",
+      office ? `Federführend: ${office}` : "",
+    ]
+      .filter(Boolean)
+      .join(" · ");
+    context.setAttribute("aria-label", context.title);
+    link.append(context);
+  }
+  li.append(link);
+  return li;
+}
+export function initSearchPanel(): void {
+  const root = document.querySelector<HTMLElement>("[data-search-panel]");
+  if (!root) return;
+  const input = root.querySelector<HTMLInputElement>("[data-search-input]")!;
+  const status = root.querySelector<HTMLElement>("[data-search-status]")!;
+  const announcer = root.querySelector<HTMLElement>("[data-search-announce]")!;
+  const retry = root.querySelector<HTMLButtonElement>("[data-retry]")!;
+  const list = root.querySelector<HTMLElement>("[data-search-results]")!;
+  const active = root.querySelector<HTMLElement>("[data-active-filters]")!;
+  const progress = root.querySelector<HTMLElement>("[data-search-progress]")!;
+  const more = root.querySelector<HTMLButtonElement>(
+    "[data-search-load-trigger]",
+  )!;
+  const save = root.querySelector<HTMLButtonElement>("[data-save-search]")!;
+  const savedLink = root.querySelector<HTMLAnchorElement>("[data-saved-link]")!;
+  const sort = root.querySelector<HTMLSelectElement>("[data-sort]")!;
+  const toggle = root.querySelector<HTMLButtonElement>("[data-filter-toggle]")!;
+  const panel = root.querySelector<HTMLElement>("[data-filter-panel]")!;
+  const dateError = root.querySelector<HTMLElement>("[data-date-error]")!;
+  const scope = JSON.parse(root.dataset.scope ?? "{}") as Partial<SearchState>;
+  const storage = getBrowserStorage();
+  const control = (field: string) =>
+    root.querySelector<HTMLInputElement | HTMLSelectElement>(
+      `#search-${field}`,
+    )!;
+  let state = parseSearchState(new URLSearchParams(location.search));
+  let results: PagefindSearchResult[] = [],
+    rendered = 0,
+    token = 0,
+    loading = false,
+    successful = false,
+    // Typing pushes one history entry, then refines it in place, so Back
+    // leaves the search instead of replaying every pause.
+    typing = false,
+    countText = "",
+    chipKey = "",
+    retryAction: () => void = () => {};
+  let timer: ReturnType<typeof setTimeout>,
+    dateTimer: ReturnType<typeof setTimeout>,
+    announceTimer: ReturnType<typeof setTimeout>;
+  let pagefind = loadPagefindModule(root.dataset.baseUrl ?? "/");
+  // Attach immediately: missing bundles must not produce unhandled rejections.
+  void pagefind.catch(() => {});
+  /** The visible status updates at once; screen readers hear only the result
+   * that is still current once typing settles. */
+  function announce(text: string, delay = 900) {
+    clearTimeout(announceTimer);
+    announceTimer = setTimeout(() => {
+      announcer.textContent = "";
+      requestAnimationFrame(() => (announcer.textContent = text));
+    }, delay);
+  }
+  const userSet = (field: FilterField) =>
+    Boolean(state[field]) && !scope[field];
+  function optionLabel(
+    field: "district" | "faction" | "committee" | "type",
+  ): string {
+    const select = control(field) as HTMLSelectElement;
+    return select.selectedOptions[0]?.textContent ?? state[field];
+  }
+  function chip(text: string, clear: () => void): HTMLButtonElement {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.append(text, element("span", "chip-remove", "×"));
+    button.setAttribute("aria-label", `${text} entfernen`);
+    button.onclick = () => {
+      const index = [...active.querySelectorAll("button")].indexOf(button);
+      clear();
+      typing = false;
+      sync();
+      // Keep keyboard users in the chip row: next chip, else previous one.
+      const buttons = active.querySelectorAll("button");
+      (buttons[index] ?? buttons[index - 1] ?? toggle).focus();
+      void run("push");
+    };
+    return button;
+  }
+  function renderChips() {
+    const chips: HTMLElement[] = [];
+    for (const field of ["district", "faction"] as const) {
+      if (!state[field]) continue;
+      const label = optionLabel(field);
+      if (scope[field]) {
+        const span = element("span", "search-scope", `Nur ${label}`);
+        span.title = `Diese Seite zeigt nur Vorlagen ${field === "district" ? "dieses Stadtteils" : "dieser Fraktion"}.`;
+        chips.push(span);
+      } else
+        chips.push(
+          chip(`${filterLabels[field]}: ${label}`, () => (state[field] = "")),
+        );
     }
-    link.append(footer);
+    const dates = dateRangeLabel(state);
+    if (dates)
+      chips.push(
+        chip(dates, () => {
+          state.from = "";
+          state.to = "";
+        }),
+      );
+    for (const field of ["committee", "type"] as const)
+      if (state[field])
+        chips.push(
+          chip(`${filterLabels[field]}: ${optionLabel(field)}`, () => {
+            state[field] = "";
+          }),
+        );
+    // Rebuild only when the chips change, so focus inside the row survives.
+    const key = chips.map((c) => c.textContent).join("|");
+    if (key === chipKey) return;
+    chipKey = key;
+    active.replaceChildren(...chips);
   }
-
-  item.append(link);
-  return item;
-}
-
-function setStatus(context: SearchPanelContext, text: string): void {
-  context.status.textContent = text;
-}
-
-function resetResults(context: SearchPanelContext): void {
-  context.results = [];
-  context.renderedCount = 0;
-  context.list.replaceChildren();
-  context.loadTrigger.hidden = true;
-  context.empty.hidden = true;
-}
-
-async function renderNextBatch(context: SearchPanelContext): Promise<void> {
-  const token = context.searchToken;
-  const batch = context.results.slice(
-    context.renderedCount,
-    context.renderedCount + SEARCH_RESULT_BATCH_SIZE,
-  );
-  if (batch.length === 0) {
-    context.loadTrigger.hidden = true;
-    return;
+  function syncSave() {
+    const saveable =
+      Boolean(storage) &&
+      (Boolean(state.q) || filterFields.some((field) => state[field]));
+    const saved =
+      saveable &&
+      readSavedSearches(storage!).some((search) =>
+        isSameSavedSearchQuery(search.state, state),
+      );
+    save.hidden = !saveable || saved;
+    save.disabled = !successful;
+    savedLink.hidden = !saved;
   }
-
-  context.renderedCount += batch.length;
-  const dataEntries = await Promise.all(
-    batch.map((result) => result.data?.().catch(() => undefined)),
-  );
-  if (token !== context.searchToken) return;
-
-  const cards = dataEntries
-    .filter((data): data is PagefindResultData => Boolean(data))
-    .map((data) => buildResultCard(data, context.sortMode));
-
-  context.list.append(...cards);
-  context.loadTrigger.hidden = context.renderedCount >= context.results.length;
-}
-
-function initLoadTriggerObserver(context: SearchPanelContext): void {
-  if (!("IntersectionObserver" in window)) return;
-
-  const observer = new IntersectionObserver(
-    (entries) => {
-      for (const entry of entries) {
-        if (!entry.isIntersecting) continue;
-        if (context.loadTrigger.hidden) continue;
-        void renderNextBatch(context);
-      }
-    },
-    { rootMargin: LOAD_AHEAD_ROOT_MARGIN },
-  );
-
-  observer.observe(context.loadTrigger);
-}
-
-/** Latched off when the index has no `date` sort key, which never recovers. */
-let dateRankingAvailable = true;
-
-function buildSearchOptions(sortMode: SearchSortMode) {
-  switch (sortMode) {
-    case "modified":
-      return { sort: { ...PAGEFIND_MODIFIED_FIRST_SORT } };
-    case "date":
-      return { sort: { ...PAGEFIND_DATE_FIRST_SORT } };
-    default:
-      return {};
-  }
-}
-
-async function runSearch(
-  context: SearchPanelContext,
-  pagefindPromise: Promise<PagefindModule>,
-  { force = false }: { force?: boolean } = {},
-): Promise<void> {
-  const query = normalizeSavedSearchQuery(context.input.value);
-  if (query === context.query && !force) return;
-
-  context.query = query;
-  const token = ++context.searchToken;
-
-  if (context.clearButton) context.clearButton.hidden = query.length === 0;
-
-  if (query.length < MIN_QUERY_LENGTH) {
-    resetResults(context);
-    setStatus(
-      context,
-      query.length === 0 ? "" : "Bitte mindestens zwei Zeichen eingeben.",
-    );
-    return;
-  }
-
-  setStatus(context, "Suche läuft …");
-
-  try {
-    const pagefind = await pagefindPromise;
-    const response = await pagefind.search(
-      query,
-      buildSearchOptions(context.sortMode),
-    );
-    if (token !== context.searchToken) return;
-
-    let results = response.results ?? [];
-    if (
-      context.sortMode === "relevance" &&
-      results.length > 1 &&
-      dateRankingAvailable
-    ) {
-      try {
-        const byDate = await pagefind.search(query, {
-          sort: { ...PAGEFIND_DATE_FIRST_SORT },
-        });
-        if (token !== context.searchToken) return;
-        results = rankResultsByPaperDate(results, byDate.results ?? []);
-      } catch (error) {
-        // A date-sort failure must not make ordinary search unavailable — and
-        // an index without the sort key fails for every query, so give up on
-        // the second search rather than repeating it on each keystroke.
-        dateRankingAvailable = false;
-        console.warn("Pagefind date ranking failed; using relevance.", error);
-      }
+  function sync(updateInput = false) {
+    Object.assign(state, scope);
+    if (updateInput) input.value = state.q;
+    // The select shows the order in effect. An explicit choice stays in the
+    // state (and URL) until reset, so relevance returns once text is typed.
+    sort.value = effectiveSort(state);
+    sort.querySelector<HTMLOptionElement>('[value="relevance"]')!.disabled =
+      !state.q;
+    root.querySelector<HTMLButtonElement>("[data-search-clear]")!.hidden =
+      !state.q;
+    for (const field of filterFields) {
+      const el = control(field);
+      if (
+        el instanceof HTMLSelectElement &&
+        state[field] &&
+        !scope[field] &&
+        !Array.from(el.options).some((option) => option.value === state[field])
+      )
+        state[field] = "";
+      el.value = state[field];
+      // The page itself fixes this field; there is nothing to choose.
+      if (scope[field]) el.closest<HTMLElement>(".filter-group")!.hidden = true;
     }
-    if (token !== context.searchToken) return;
-
-    resetResults(context);
-    context.results = results;
-
-    if (context.results.length === 0) {
-      setStatus(context, `Keine Treffer für „${query}“.`);
-      context.empty.hidden = false;
+    // The page scope is not a filter the visitor set.
+    const count = [
+      userSet("district"),
+      userSet("faction"),
+      state.from || state.to,
+      userSet("committee"),
+      userSet("type"),
+    ].filter(Boolean).length;
+    const counter = root.querySelector<HTMLElement>("[data-filter-count]")!;
+    counter.textContent = String(count);
+    counter.hidden = !count;
+    toggle.setAttribute(
+      "aria-label",
+      count ? `Filter, ${count} aktiv` : "Filter",
+    );
+    const invalid = invalidDateRange(state);
+    for (const field of ["from", "to"] as const)
+      control(field).setAttribute("aria-invalid", String(invalid));
+    dateError.hidden = !invalid;
+    renderChips();
+    root.querySelector<HTMLElement>("[data-reset-row]")!.hidden =
+      !state.sort && !filterFields.some(userSet);
+    syncSave();
+  }
+  function showError(text: string, action: () => void) {
+    status.textContent = text;
+    announce(text, 0);
+    retryAction = action;
+    retry.hidden = false;
+  }
+  async function batch(replace = false) {
+    if (loading) return;
+    loading = true;
+    const current = token,
+      snapshot = { ...state };
+    more.disabled = true;
+    try {
+      const entries = await Promise.all(
+        results
+          .slice(rendered, rendered + SEARCH_RESULT_BATCH_SIZE)
+          .map((r) => r.data!()),
+      );
+      if (current !== token) return;
+      rendered += entries.length;
+      const cards = entries.map((data) => card(data, snapshot));
+      if (replace) list.replaceChildren(...cards);
+      else list.append(...cards);
+      more.hidden = progress.hidden = rendered >= results.length;
+      progress.textContent = `${rendered.toLocaleString("de-DE")} von ${results.length.toLocaleString("de-DE")} angezeigt`;
+    } finally {
+      loading = false;
+      more.disabled = false;
+    }
+  }
+  function clearResults() {
+    list.replaceChildren();
+    results = [];
+    rendered = 0;
+    more.hidden = progress.hidden = true;
+  }
+  async function run(mode: "push" | "replace" = "replace") {
+    const current = ++token;
+    successful = false;
+    retry.hidden = true;
+    sync();
+    // Scope comes from the page path, so the URL does not repeat it.
+    const visible = { ...state };
+    for (const field of Object.keys(scope) as (keyof SearchState)[])
+      visible[field] = "";
+    const query = serializeSearchState(visible);
+    const url = `${location.pathname}${query ? `?${query}` : ""}${location.hash}`;
+    if (url !== `${location.pathname}${location.search}${location.hash}`)
+      history[mode === "push" ? "pushState" : "replaceState"](null, "", url);
+    if (invalidDateRange(state)) {
+      clearResults();
+      const text =
+        "Bitte einen gültigen Zeitraum angeben: Von muss vor oder am Bis-Datum liegen.";
+      status.textContent = text;
+      announce(text, 0);
+      root.setAttribute("aria-busy", "false");
       return;
     }
-
-    const countLabel =
-      context.results.length === 1
-        ? "1 Treffer"
-        : `${context.results.length} Treffer`;
-    setStatus(
-      context,
-      `${countLabel} für „${query}“ · ${getSortLabel(context.sortMode)}`,
-    );
-    await renderNextBatch(context);
-  } catch (error) {
-    if (token !== context.searchToken) return;
-    console.warn("Pagefind search failed.", error);
-    resetResults(context);
-    setStatus(context, "Die Suche ist momentan nicht verfügbar.");
-  }
-}
-
-function getQueryFromUrl(): string {
-  const params = new URLSearchParams(window.location.search);
-  return normalizeSavedSearchQuery(params.get(SAVED_SEARCH_QUERY_PARAM) ?? "");
-}
-
-function resolveElements(root: HTMLElement): SearchPanelElements | null {
-  const input = root.querySelector<HTMLInputElement>(SEARCH_INPUT_SELECTOR);
-  const status = root.querySelector<HTMLElement>("[data-search-status]");
-  const list = root.querySelector<HTMLElement>("[data-search-results]");
-  const loadTrigger = root.querySelector<HTMLElement>(
-    "[data-search-load-trigger]",
-  );
-  const empty = root.querySelector<HTMLElement>("[data-search-empty]");
-  if (!input || !status || !list || !loadTrigger || !empty) return null;
-
-  return {
-    root,
-    input,
-    clearButton: root.querySelector<HTMLButtonElement>("[data-search-clear]"),
-    status,
-    list,
-    loadTrigger,
-    empty,
-    sortButtons: [
-      ...root.querySelectorAll<HTMLButtonElement>("[data-search-sort]"),
-    ],
-  };
-}
-
-function initSortToggle(
-  context: SearchPanelContext,
-  pagefindPromise: Promise<PagefindModule>,
-): void {
-  for (const button of context.sortButtons) {
-    button.addEventListener("click", () => {
-      const sortMode = parseSortMode(button.dataset.searchSort);
-      if (sortMode === context.sortMode) return;
-
-      context.sortMode = sortMode;
-      for (const other of context.sortButtons) {
-        other.setAttribute(
-          "aria-pressed",
-          String(other.dataset.searchSort === sortMode),
+    // Earlier results stay (dimmed) until the new ones replace them.
+    if (!list.childElementCount)
+      status.textContent = "Vorlagen werden geladen …";
+    root.setAttribute("aria-busy", "true");
+    try {
+      const module = await pagefind;
+      const found = await searchPapers(module, { ...state });
+      if (current !== token) return;
+      results = found;
+      rendered = 0;
+      loading = false;
+      await batch(true);
+      if (current !== token) return;
+      countText = `${results.length.toLocaleString("de-DE")} ${state.q ? "Treffer" : "Vorlagen"}${results.length ? "" : " – versuchen Sie andere Begriffe oder weniger Filter."}`;
+      status.textContent = countText;
+      announce(countText);
+      successful = true;
+      if (storage)
+        writeSavedSearches(
+          storage,
+          markSavedSearchViewed(readSavedSearches(storage), state),
         );
-      }
-
-      void runSearch(context, pagefindPromise, { force: true });
-    });
+      syncSave();
+    } catch (error) {
+      if (current !== token) return;
+      console.warn("Search failed", error);
+      clearResults();
+      showError("Die Suche ist momentan nicht verfügbar.", () => {
+        pagefind = loadPagefindModule(root.dataset.baseUrl ?? "/");
+        void pagefind.catch(() => {});
+        void run();
+      });
+    } finally {
+      if (current === token) root.setAttribute("aria-busy", "false");
+    }
   }
-}
-
-export function initSearchPanel(): void {
-  const root = document.querySelector<HTMLElement>(SEARCH_PANEL_SELECTOR);
-  if (!root) return;
-
-  const elements = resolveElements(root);
-  if (!elements) return;
-
-  const context: SearchPanelContext = {
-    ...elements,
-    baseUrl: root.dataset.baseUrl ?? "/",
-    sortMode: parseSortMode(root.dataset.sortMode),
-    results: [],
-    renderedCount: 0,
-    query: "",
-    searchToken: 0,
-  };
-
-  const pagefindPromise = loadPagefindModule(context.baseUrl).then(
-    async (pagefind) => {
-      await pagefind.options?.({ excerptLength: EXCERPT_LENGTH });
-      return pagefind;
-    },
-  );
-
-  let debounceTimer: ReturnType<typeof setTimeout> | undefined;
-  const scheduleSearch = (): void => {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(
-      () => void runSearch(context, pagefindPromise),
-      SEARCH_DEBOUNCE_MS,
+  function loadMore() {
+    retry.hidden = true;
+    void batch().catch(() =>
+      showError(
+        `${countText} · Weitere Treffer konnten nicht geladen werden.`,
+        loadMore,
+      ),
     );
-  };
-
-  context.input.addEventListener("input", scheduleSearch);
-  context.root
-    .querySelector("[data-search-form]")
-    ?.addEventListener("submit", (event) => {
-      event.preventDefault();
-      clearTimeout(debounceTimer);
-      void runSearch(context, pagefindPromise);
-    });
-
-  context.clearButton?.addEventListener("click", () => {
-    context.input.value = "";
-    context.input.dispatchEvent(new Event("input", { bubbles: true }));
-    context.input.focus();
-  });
-
-  initSortToggle(context, pagefindPromise);
-  initLoadTriggerObserver(context);
-
-  const initialQuery = getQueryFromUrl();
-  if (initialQuery) {
-    context.input.value = initialQuery;
-    context.input.dispatchEvent(new Event("input", { bubbles: true }));
   }
+  input.addEventListener("input", () => {
+    ++token;
+    state.q = input.value.trim().replace(/\s+/g, " ");
+    successful = false;
+    save.disabled = true;
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      void run(typing ? "replace" : "push");
+      typing = true;
+    }, 180);
+  });
+  input.addEventListener("blur", () => (typing = false));
+  root.querySelector("form")!.addEventListener("submit", (event) => {
+    event.preventDefault();
+    clearTimeout(timer);
+    void run(typing ? "replace" : "push");
+    typing = false;
+  });
+  for (const field of filterFields) {
+    const el = control(field);
+    const apply = () => {
+      clearTimeout(dateTimer);
+      typing = false;
+      if (state[field] === el.value) return;
+      state[field] = el.value;
+      void run("push");
+    };
+    if (field !== "from" && field !== "to") {
+      el.addEventListener("change", apply);
+      continue;
+    }
+    // Typing a year emits 0002, 0020, 0202 before 2024: wait for a full year
+    // and a short pause, or for the field to lose focus.
+    el.addEventListener("change", () => {
+      clearTimeout(dateTimer);
+      if (el.value && Number(el.value.slice(0, 4)) < 1000) return;
+      dateTimer = setTimeout(apply, 500);
+    });
+    el.addEventListener("blur", apply);
+  }
+  toggle.addEventListener("click", () => {
+    panel.hidden = !panel.hidden;
+    toggle.setAttribute("aria-expanded", String(!panel.hidden));
+  });
+  sort.addEventListener("change", () => {
+    typing = false;
+    state.sort = sort.value as SearchState["sort"];
+    void run("push");
+  });
+  root.querySelector("[data-reset]")!.addEventListener("click", () => {
+    const q = state.q;
+    typing = false;
+    state = parseSearchState(new URLSearchParams());
+    state.q = q;
+    void run("push");
+    // The reset row hides once nothing is left to reset; keep focus nearby.
+    toggle.focus();
+  });
+  root.querySelector("[data-search-clear]")!.addEventListener("click", () => {
+    typing = false;
+    clearTimeout(timer);
+    state.q = "";
+    input.value = "";
+    input.focus();
+    void run("push");
+  });
+  retry.addEventListener("click", () => retryAction());
+  more.addEventListener("click", loadMore);
+  save.addEventListener("click", () => {
+    if (!storage || !successful) return;
+    if (
+      writeSavedSearches(
+        storage,
+        upsertSavedSearch(readSavedSearches(storage), state),
+      )
+    ) {
+      syncSave();
+      // The button gives way to the "Gespeichert" link; keep focus there.
+      savedLink.focus();
+      announce("Suche gespeichert.", 0);
+    } else {
+      status.textContent = `${countText} · Speichern fehlgeschlagen`;
+      announce("Suche konnte nicht gespeichert werden.", 0);
+    }
+  });
+  window.addEventListener("popstate", () => {
+    clearTimeout(timer);
+    clearTimeout(dateTimer);
+    typing = false;
+    state = parseSearchState(new URLSearchParams(location.search));
+    sync(true);
+    void run();
+  });
+  sync(true);
+  void run();
 }

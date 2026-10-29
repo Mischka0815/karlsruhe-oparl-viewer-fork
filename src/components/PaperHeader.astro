@@ -1,4 +1,6 @@
 ---
+import { calendarDate } from "../shared/search-state";
+import { formatMeetingName } from "../shared/meeting-presentation";
 import type { Paper } from "../shared/types";
 import {
   getConsultationResult,
@@ -20,7 +22,7 @@ const baseUrl = import.meta.env.BASE_URL;
 
 /** Search result cards read these as Pagefind meta — keep the names in sync
  * with `search-panel-controller.ts`. */
-const pagefindSortAtt = `date:${new Date(paper.date).toISOString()}`;
+const pagefindSortAtt = `date:${calendarDate(paper.date) ? new Date(paper.date).toISOString() : "0000-01-01T00:00:00.000Z"}`;
 
 const { meeting, agendaItem } = status.highlight ?? {};
 const result = status.highlight ? getConsultationResult(status.highlight) : "";
@@ -63,9 +65,9 @@ const meetingSlot = formatMeetingSlot(
         {result && <strong class="status-result">{result}</strong>}
         {meeting?.name &&
           (meetingUrl ? (
-            <a href={meetingUrl}>{meeting.name}</a>
+            <a href={meetingUrl}>{formatMeetingName(meeting.name)}</a>
           ) : (
-            <span>{meeting.name}</span>
+            <span>{formatMeetingName(meeting.name)}</span>
           ))}
         {meetingSlot && <span class="status-when">{meetingSlot}</span>}
       </span>

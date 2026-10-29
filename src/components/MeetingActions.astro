@@ -28,10 +28,16 @@ const baseUrl = import.meta.env.BASE_URL;
     </svg>
     Einzeltermin herunterladen (.ics)
   </a>
+  {/* The committee is named on the page already; spelling it out again made
+      this the widest element in the box. With several, the name tells them apart. */}
   {committeeFeeds.map((feed) => (
     <FeedSubscriptionLink
       href={feed.url}
-      label={`Aktualisierungen für ${feed.name} abonnieren`}
+      label={
+        committeeFeeds.length === 1
+          ? "Gremium abonnieren"
+          : `${feed.name} abonnieren`
+      }
     />
   ))}
 </div>

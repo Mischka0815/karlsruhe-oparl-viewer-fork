@@ -3,6 +3,7 @@ import {
   getMeetingMonth,
   hasMeetingProtocol,
 } from "./meeting-archive";
+import { parseOrtschaftName } from "./meeting-presentation";
 import {
   MEETING_BODY_TYPES,
   type MeetingBodyType,
@@ -51,12 +52,7 @@ function getBodyTypes(
 }
 
 function getDistricts(organizationNames: string[]): string[] {
-  return uniqueNonEmpty(
-    organizationNames.flatMap((name) => {
-      const match = /^Ortschaftsrat\s+(.+)$/i.exec(name.trim());
-      return match?.[1] ? [match[1]] : [];
-    }),
-  );
+  return uniqueNonEmpty(organizationNames.map(parseOrtschaftName));
 }
 
 export function getPublicAgendaCount(meeting: Meeting): number {

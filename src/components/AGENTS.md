@@ -12,11 +12,9 @@ Reusable UI components. Prefer extending existing components over creating new o
 | `Breadcrumbs.astro`          | Canonical hierarchy on detail and scoped list pages               |
 | `PageContainer.astro`        | Shared max-width wrapper (`width="wide" \| "narrow"`)             |
 | `PaperListPage.astro`        | Reusable list-page skeleton (title + intro slot + list)           |
-| `PaperList.astro`            | Paper cards, summary text, filter panel mount point               |
-| `PaperFilters.astro`         | Filter controls panel                                             |
-| `FilterSelect.astro`         | Reusable dropdown for a single filter                             |
+| `FilterSelect.astro`         | Reusable dropdown for a single filter; optional described `hint`  |
 | `MeetingFilters.astro`       | Meeting-specific filter controls and status (`variant` aware)     |
-| `MeetingList.astro`          | Meeting cards for the upcoming list and the archive               |
+| `MeetingList.astro`          | Month-grouped meeting rows for the upcoming list and the archive  |
 | `MeetingViewTabs.astro`      | Switches between upcoming meetings and the archive                |
 | `MeetingActions.astro`       | Single-event calendar download and committee feed links           |
 | `SearchPanel.astro`          | Pagefind search box + rich result cards (custom UI)               |
@@ -26,7 +24,7 @@ Reusable UI components. Prefer extending existing components over creating new o
 | `PaperFacts.astro`           | "Eckdaten" sidebar card — modified, bodies, submitters, districts |
 | `PaperSummary.astro`         | LLM summary + key points, one per full-width row; only if present |
 | `AuxiliaryFiles.astro`       | File attachments — detail page                                    |
-| `StadtteilHint.astro`        | District hint — detail page                                       |
+| `StadtteilHint.astro`        | One-line, expandable classifier caveat — district pages           |
 | `MeetingDigest.astro`        | Generated sitting preview — shell only, filled at runtime         |
 | `MeetingAgenda.astro`        | Public agenda with links to matching papers                       |
 | `PaperTimeline.astro`        | Paper lifecycle, consultations, and decisions                     |
@@ -34,20 +32,18 @@ Reusable UI components. Prefer extending existing components over creating new o
 
 ## Reuse Rules
 
-- All new list pages should use `PaperListPage` + `PaperList`
+- All new list pages should use `PaperListPage` + `SearchPanel`
 - Wrap page content in `PageContainer` for consistent max-width
 - Use `LegacyRedirectPage` for any `noindex` redirect route
 - Use `FilterSelect` for every filter dropdown; do not build ad-hoc selects
 
 ## Contracts — Do Not Break
 
-**Filter control IDs** — `paper-list-controller.ts` selects controls by these exact IDs:
-
-```
-filter-year  filter-type  filter-org  filter-role  filter-result  filter-stadtteil
-```
-
-And reads data from table row `data-*` attributes that match these names.
+**Unified paper discovery** — see [SEARCH.md](../../SEARCH.md). `SearchPanel`
+uses `search-state.ts`, `search-index.ts`, and `search-panel-controller.ts`.
+All five filters share a native collapsed disclosure; dates use optional from/to
+inputs. `PaperListPage` provides contextual introductions and a pinned scope.
+The old rendered archive and its controller have been removed.
 
 Meeting filter IDs are defined in `src/shared/meeting-filter-definitions.ts`:
 
@@ -57,7 +53,15 @@ Meeting filter IDs are defined in `src/shared/meeting-filter-definitions.ts`:
 `meeting-filter-search` · `meeting-filter-reset`
 
 On the meeting list, `meeting-filter-body-type` is the always-visible segmented
-control. The remaining meeting filters live in the collapsible advanced panel.
+control. The remaining meeting filters live behind a "Filter" disclosure built
+like the paper search toolbar: count badge, removable active-filter chips while
+closed, and the match count. `MeetingList` groups rows under month headings
+(`data-meeting-group`); the controller hides a month whose rows all fail.
+
+Meeting names pass through `formatMeetingName` (`meeting-presentation.ts`)
+wherever they are displayed — it drops the "(öffentlich/nicht öffentlich)"
+suffix but keeps "(nicht öffentlich)". Rows and the detail page print the
+committee only when the name does not already contain it.
 
 Which selects are rendered depends on the list variant, declared as
 `data-meeting-filters="upcoming" | "archive"` on the panel and read back by
@@ -96,11 +100,9 @@ in `buildMeetingFilterModel`, an attribute on the card, and a branch in
   useful page-text excerpt. Keep fields readers search by in visible page text
   where practical — the "Eckdaten" card carries the reference number instead
   of leaving it only in the (Pagefind-ignored) breadcrumb
-- Panel markup contract (selectors in `pagefind-config.ts`):
-  `data-search-panel` (with `data-base-url` + `data-sort-mode`) ·
-  `data-search-form` · `data-search-input` · `data-search-clear` ·
-  `data-search-status` · `data-search-results` · `data-search-empty` ·
-  `data-search-load-trigger`
+- Panel selectors and events are owned by `search-panel-controller.ts`.
+- Detail pages emit categorical/date filters and a numeric `changed` rank from
+  the canonical paper inventory. These carry no searchable text.
 
 **Extracted file text — indexed at build, fetched at runtime**
 

@@ -12,6 +12,8 @@ import {
   normalizeStringList,
 } from "./utils";
 import { MEETING_DIGEST_LEADS } from "./meeting-digest";
+import { buildMeetingFilterModel } from "./meeting-filters";
+import { parseOrtschaftName } from "./meeting-presentation";
 import type {
   FileContent,
   Meeting,
@@ -335,6 +337,32 @@ export const getPastMeetings = memoizeAsync(async (): Promise<Meeting[]> => {
     )
     .reverse();
 });
+
+/**
+ * Ortschaften with their own council, and those of them with an upcoming
+ * sitting. The second list is the meeting filter's own `ortschaft` options, so
+ * a link built from it always selects something on `/sitzungen`.
+ */
+export const getOrtschaften = memoizeAsync(
+  async (): Promise<{ all: string[]; withUpcomingMeetings: string[] }> => {
+    const [organizationsById, upcomingMeetings] = await Promise.all([
+      loadOrganizations(),
+      getUpcomingMeetings(),
+    ]);
+    const all = [
+      ...new Set(
+        [...organizationsById.values()]
+          .map((organization) => parseOrtschaftName(organization.name ?? ""))
+          .filter(Boolean),
+      ),
+    ].sort((left, right) => left.localeCompare(right, "de-DE"));
+    const { options } = buildMeetingFilterModel(
+      upcomingMeetings,
+      organizationsById,
+    );
+    return { all, withUpcomingMeetings: options.districts };
+  },
+);
 
 export const getAvailableDistricts = memoizeAsync(
   async (): Promise<string[]> => {

@@ -10,14 +10,14 @@ Data fetching, caching, filtering logic, utilities, and TypeScript types.
 | `file-text-loader.ts`           | Fetches extracted PDF text when a disclosure is opened   |
 | `data-source.ts`                | Reads the local data checkout (single files and shards)  |
 | `data.ts`                       | All build-time loaders, caches, and entity resolvers     |
-| `paper-filters.ts`              | Derives filter values and options from loaded papers     |
+| `search-index.ts`               | Canonical paper filter values and options                |
 | `paper-grouping.ts`             | Paper list ordering and date-group headings              |
 | `paper-status.ts`               | Consultation ordering, process status + its consultation |
-| `paper-filter-definitions.ts`   | Static filter field definitions                          |
-| `paper-list-controller.ts`      | Client-side paper-list filtering and incremental loading |
 | `meeting-filters.ts`            | Canonical organization-based meeting filter model        |
 | `meeting-filter-definitions.ts` | Meeting filter IDs, URL parameters, and option sets      |
 | `meeting-filter-controller.ts`  | Client-side meeting filtering and URL synchronization    |
+| `meeting-presentation.ts`       | Display name, month groups, row date/time for meetings   |
+| `paper-presentation.ts`         | Hides import artifacts: bulk stamp, placeholder offices  |
 | `paper-detail-paths.ts`         | Maps paper references to URL slugs                       |
 | `meeting-paths.ts`              | Maps OParl meeting IDs to meeting detail routes          |
 | `meeting-calendar.ts`           | Serializes one meeting as an RFC 5545 calendar event     |
@@ -29,7 +29,6 @@ Data fetching, caching, filtering logic, utilities, and TypeScript types.
 | `pagefind-config.ts`            | Search panel selectors, sort presets, build-time flag    |
 | `search-panel-controller.ts`    | Search box behaviour and result card rendering           |
 | `saved-searches.ts`             | Saved search logic                                       |
-| `responsive-filters-panel.ts`   | Responsive filter panel UI behaviour                     |
 | `types/`                        | All TypeScript type contracts                            |
 
 ## Data Flow
@@ -37,7 +36,7 @@ Data fetching, caching, filtering logic, utilities, and TypeScript types.
 ```
 syndication-data/docs (data-source.ts, DATA_LOCAL_DIR)
   └─ data.ts (loaders, caches, resolvers)
-       ├─ paper-filters.ts       ← builds filter values/options for list pages
+       ├─ search-index.ts        ← builds canonical paper filter values/options
        ├─ meeting-filters.ts     ← builds canonical meeting filter values/options
        └─ paper-detail-paths.ts  ← maps reference → URL slug
 ```
@@ -99,37 +98,12 @@ syndication-data/docs (data-source.ts, DATA_LOCAL_DIR)
 2. Update the loader/resolver in `data.ts`
 3. Surface the field in the relevant component or page
 
-## Adding or Changing List Filters
+## Unified paper discovery
 
-1. Update `PaperFilterValues` / `PaperFilterOptions` in `types/paper-filters.ts`
-2. Update `buildPaperFilterModel()` in `paper-filters.ts`
-3. Update filter rendering in `src/components/PaperList.astro`
-4. Update client behaviour in `paper-list-controller.ts`
-   — filter control IDs must stay in sync (see `src/components/AGENTS.md`)
+See [SEARCH.md](../../SEARCH.md) for the state, URL, Pagefind, date, public
+consultation, saved-search migration, and freshness contracts. The former
+paper filters/controller are replaced by `search-state.ts`, `search-index.ts`,
+`public-consultations.ts`, and `search-panel-controller.ts`. Pagefind evaluates
+all filters before pagination; no full archive is rendered into list pages.
 
-Meeting filters follow the same separation of concerns: `meeting-filters.ts`
-derives stable values from the OParl organization relation,
-`MeetingFilters.astro` owns the controls, and
-`meeting-filter-controller.ts` only matches rendered data attributes. Keep title
-parsing as a fallback for meetings without a resolvable organization; do not
-use title variants as the primary organization source.
-
-## Search Result Sorting
-
-- Main search (`/`): Pagefind relevance blended with paper recency by
-  `search-ranking.ts`. Pagefind scores every result but exposes dates only as an
-  ordering, so a second `{ date: "desc" }` search supplies recency as a rank
-  quantile — far cheaper than a `data()` fetch per result. The two multiply, so
-  a dominant match cannot be displaced while a plateau of near-equal scores is
-  ordered by date outright. Raising `RECENCY_WEIGHT` past ~0.6 starts costing
-  genuine top hits; measure against a built index before changing it
-- Main search toggle "Neueste": `PAGEFIND_DATE_FIRST_SORT` (`{ date: "desc" }`,
-  the paper date), no relevance blend; the date chip on each card is emphasised
-- Saved search results (`/suche`): `PAGEFIND_MODIFIED_FIRST_SORT`
-  (`{ modified: "desc" }`), so the page reads as a "what changed" feed
-- Results render in batches of `SEARCH_RESULT_BATCH_SIZE` (20) with
-  IntersectionObserver-driven follow-up batches
-
-## Pitfalls
-
-- Any route-affecting change to references must preserve existing `routeReference` URLs
+Meeting filters retain their separate organization-based model.

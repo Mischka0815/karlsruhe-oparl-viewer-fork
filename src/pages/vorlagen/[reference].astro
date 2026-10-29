@@ -1,4 +1,7 @@
 ---
+import { calendarDate } from "../../shared/search-state";
+import { BULK_MODIFIED_DATE } from "../../shared/constants";
+import { loadSearchIndex } from "../../shared/search-index";
 import Layout from "../../layouts/Layout.astro";
 import PageContainer from "../../components/PageContainer.astro";
 import Breadcrumbs from "../../components/Breadcrumbs.astro";
@@ -15,7 +18,6 @@ import {
   resolveAuxiliaryFiles,
   resolveRelatedPapers,
   resolvePaperSummary,
-  getPaperYear,
   isPaperSubmittedByAfd,
 } from "../../shared/data";
 import { derivePaperStatus } from "../../shared/paper-status";
@@ -52,9 +54,10 @@ const [
   isPaperSubmittedByAfd(paper),
 ]);
 
+const searchRecord = (await loadSearchIndex()).records.get(paper.id)!;
 const baseUrl = import.meta.env.BASE_URL;
 const status = derivePaperStatus(consultations);
-const year = getPaperYear(paper);
+const year = calendarDate(paper.date).slice(0, 4);
 const metaDescription = buildPaperDescription({
   reference: paper.reference,
   name: paper.name,
@@ -88,7 +91,7 @@ const structuredData = {
   title={`${paper.reference} – ${paper.name}`}
   description={metaDescription}
   structuredData={structuredData}
-  navigationSection="papers"
+  navigationSection="search"
   siteHintScan
   siteHintForce={submittedByAfd}
 >
@@ -96,11 +99,41 @@ const structuredData = {
     <Breadcrumbs
       items={[
         { label: "Vorlagen", href: buildPapersUrl(baseUrl) },
-        { label: year, href: buildPapersUrl(baseUrl, year) },
+        ...(year ? [{ label: year, href: buildPapersUrl(baseUrl, year) }] : []),
         { label: paper.reference },
       ]}
     />
 
+    <div data-pagefind-ignore>
+      {[
+        paper.created,
+        ...(paper.modified.startsWith(BULK_MODIFIED_DATE)
+          ? []
+          : [paper.modified]),
+      ]
+        .map((value) =>
+          Number.isFinite(Date.parse(value))
+            ? new Date(value).toISOString().slice(0, 10)
+            : "",
+        )
+        .filter(Boolean)
+        .map((day) => (
+          <span data-pagefind-filter={`freshness:${day}`} />
+        ))}
+      <span data-pagefind-sort={`changed:${searchRecord.rank}`} />
+      <span data-pagefind-filter={`reference:${searchRecord.reference}`} />
+      {searchRecord.date && (
+        <span data-pagefind-filter={`day:${searchRecord.date}`} />
+      )}
+      {(["district", "faction", "committee"] as const).map((field) =>
+        searchRecord[field].map((value) => (
+          <span data-pagefind-filter={`${field}:${value}`} />
+        )),
+      )}
+      {searchRecord.type && (
+        <span data-pagefind-filter={`type:${searchRecord.type}`} />
+      )}
+    </div>
     <PaperHeader paper={paper} status={status} />
 
     {/* Two columns from 60rem up: the narrative (summary, course, documents)

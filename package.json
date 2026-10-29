@@ -17,6 +17,7 @@
     "build:quick:quiet": "SKIP_PAGEFIND=1 node scripts/build-quiet.mjs",
     "build:verify": "node scripts/verify-build-output.mjs",
     "test": "node --test tests/",
+    "test:search-index": "node scripts/verify-search-index.mjs",
     "preview": "astro preview",
     "astro": "astro",
     "format": "npx prettier . --write"

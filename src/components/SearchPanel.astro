@@ -1,370 +1,779 @@
 ---
-import type { SearchSortMode } from "../shared/search-panel-controller";
-
+import FilterSelect from "./FilterSelect.astro";
+import { loadSearchIndex } from "../shared/search-index";
+import type { SearchState } from "../shared/search-state";
 interface Props {
-  /** `relevance` for the main search, `modified` for saved-search feeds. */
-  sortMode?: SearchSortMode;
-  /** Lets visitors switch between relevance and recency at runtime. */
-  showSortToggle?: boolean;
-  placeholder?: string;
-  emptyHint?: string;
+  scope?: Partial<SearchState>;
 }
-
-const {
-  sortMode = "relevance",
-  showSortToggle = false,
-  placeholder = "Vorlagen durchsuchen …",
-  emptyHint = "Versuchen Sie es mit einem anderen Begriff oder weniger Wörtern.",
-} = Astro.props;
-
-const sortOptions: { mode: SearchSortMode; label: string }[] = [
-  { mode: "relevance", label: "Relevanz" },
-  { mode: "date", label: "Neueste" },
-  { mode: "modified", label: "Zuletzt geändert" },
-];
-const baseUrl = import.meta.env.BASE_URL;
+const { scope = {} } = Astro.props;
+const { options } = await loadSearchIndex();
 ---
 
 <section
   class="search-panel"
   data-pagefind-ignore
   data-search-panel
-  data-base-url={baseUrl}
-  data-sort-mode={sortMode}
+  data-base-url={import.meta.env.BASE_URL}
+  data-scope={JSON.stringify(scope)}
 >
   <form class="search-form" role="search" data-search-form>
     <svg
       class="search-icon"
-      width="18"
-      height="18"
-      viewBox="0 0 16 16"
+      width="20"
+      height="20"
+      viewBox="0 0 20 20"
       fill="none"
       stroke="currentColor"
-      stroke-width="2"
+      stroke-width="1.6"
       aria-hidden="true"
     >
-      <circle cx="7" cy="7" r="5"></circle>
-      <path d="M11 11l4 4" stroke-linecap="round"></path>
+      <circle cx="8.5" cy="8.5" r="5.5" />
+      <path d="m13 13 4 4" />
     </svg>
     <input
       class="search-input"
       type="search"
       name="q"
       autocomplete="off"
-      enterkeyhint="search"
-      aria-label="Suchbegriff"
-      placeholder={placeholder}
+      aria-label="Suchbegriff oder Vorlagennummer"
+      placeholder="Thema oder Vorlagen-Nr. …"
       data-search-input
     />
     <button
-      type="button"
       class="search-clear"
-      aria-label="Suche zurücksetzen"
+      type="button"
       data-search-clear
+      aria-label="Suchtext löschen"
       hidden
     >
-      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-        <path
-          d="M3 3l10 10M13 3L3 13"
-          stroke="currentColor"
-          stroke-width="1.75"
-          stroke-linecap="round"
-        ></path>
+      ×
+    </button>
+    <button class="search-submit" type="submit">
+      <svg
+        class="search-submit-icon"
+        width="18"
+        height="18"
+        viewBox="0 0 20 20"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        aria-hidden="true"
+      >
+        <circle cx="8.5" cy="8.5" r="5.5" />
+        <path d="m13 13 4 4" />
       </svg>
+      <span class="search-submit-label">Suchen</span>
     </button>
   </form>
-
-  <slot name="actions" />
-
   <div class="search-toolbar">
-    <p
-      class="search-status"
-      role="status"
-      aria-live="polite"
-      data-search-status
-    ></p>
-    {showSortToggle && (
-      <div class="search-sort" role="group" aria-label="Sortierung">
-        {sortOptions.map((option) => (
-          <button
-            type="button"
-            class="search-sort-option"
-            data-search-sort={option.mode}
-            aria-pressed={String(option.mode === sortMode)}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-    )}
+    <button
+      class="search-filter-toggle"
+      type="button"
+      aria-expanded="false"
+      aria-controls="search-filter-panel"
+      data-filter-toggle
+    >
+      Filter
+      <span
+        class="filter-count"
+        data-filter-count
+        aria-hidden="true"
+        hidden
+      ></span>
+    </button>
+    <div
+      class="active-filters"
+      role="group"
+      aria-label="Aktive Filter"
+      data-active-filters
+    ></div>
+    <div class="search-sort-control">
+      <label for="search-sort">Sortierung</label>
+      <select id="search-sort" data-sort>
+        <option value="relevance">Relevanz</option>
+        <option value="date">Neueste Vorlagen</option>
+        <option value="modified">Zuletzt geändert</option>
+      </select>
+    </div>
   </div>
-
+  <div
+    class="search-filter-panel"
+    id="search-filter-panel"
+    data-filter-panel
+    hidden
+  >
+    <div class="search-filter-fields">
+      <FilterSelect
+        id="search-district"
+        label="Stadtteil"
+        hint="Zuordnungen und Erwähnungen – keine Aussage über lokale Auswirkungen"
+        options={options.district}
+      />
+      <FilterSelect
+        id="search-faction"
+        label="Einreichende Fraktion"
+        hint="Auch gemeinsame Anträge"
+        options={options.faction}
+      />
+      <FilterSelect
+        id="search-committee"
+        label="Gremium"
+        hint="Beteiligt an öffentlichen Beratungen"
+        options={options.committee}
+      />
+      <FilterSelect
+        id="search-type"
+        label="Vorlagenart"
+        options={options.type}
+      />
+      <fieldset class="search-date-range">
+        <legend>Vorlagendatum</legend>
+        <div class="search-date-fields">
+          <div>
+            <label for="search-from">Von</label>
+            <input
+              id="search-from"
+              type="date"
+              aria-describedby="search-date-hint search-date-error"
+            />
+          </div>
+          <div>
+            <label for="search-to">Bis</label>
+            <input
+              id="search-to"
+              type="date"
+              aria-describedby="search-date-hint search-date-error"
+            />
+          </div>
+        </div>
+        <p class="filter-hint" id="search-date-hint">
+          Datum der Vorlage, unabhängig von späteren Änderungen
+        </p>
+        <p class="filter-error" id="search-date-error" data-date-error hidden>
+          Von muss vor oder am Bis-Datum liegen.
+        </p>
+      </fieldset>
+    </div>
+    <div class="search-filter-footer" data-reset-row hidden>
+      <button
+        class="search-reset"
+        type="button"
+        data-reset
+        aria-label="Filter und Sortierung zurücksetzen"
+      >
+        Zurücksetzen
+      </button>
+    </div>
+  </div>
+  <div class="search-results-heading">
+    <div class="search-status-row">
+      <p class="search-status" data-search-status>
+        Vorlagen werden geladen …
+      </p>
+      <button class="search-retry" type="button" data-retry hidden>
+        Erneut versuchen
+      </button>
+    </div>
+    <button class="search-save" type="button" data-save-search hidden>
+      <svg
+        width="14"
+        height="16"
+        viewBox="0 0 14 16"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.4"
+        aria-hidden="true"
+      >
+        <path d="M3 1h8a1 1 0 0 1 1 1v12l-5-3-5 3V2a1 1 0 0 1 1-1Z" />
+      </svg>
+      Suche speichern
+    </button>
+    <a
+      class="search-saved"
+      href={`${import.meta.env.BASE_URL}gespeicherte-suchen`}
+      data-saved-link
+      hidden
+    >
+      <svg
+        width="14"
+        height="16"
+        viewBox="0 0 14 16"
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        <path d="M3 1h8a1 1 0 0 1 1 1v12l-5-3-5 3V2a1 1 0 0 1 1-1Z" />
+      </svg>
+      Gespeichert
+    </a>
+  </div>
+  <p class="visually-hidden" role="status" data-search-announce></p>
   <ol class="search-results" data-search-results></ol>
-
-  <p class="search-empty" data-search-empty hidden>
-    {emptyHint}
-  </p>
-
-  <p class="search-load-trigger" data-search-load-trigger hidden>
-    Weitere Treffer werden geladen …
-  </p>
+  <p class="search-progress" data-search-progress hidden></p>
+  <button
+    class="search-load-trigger"
+    type="button"
+    data-search-load-trigger
+    hidden
+  >
+    Weitere Treffer laden
+  </button>
+  <noscript>
+    Zum Suchen und Filtern bitte JavaScript aktivieren. Vorlagen sind auch über
+    Sitzungen, Stadtteile und Fraktionen erreichbar.
+  </noscript>
 </section>
 
-<style>
+<style is:global>
   .search-panel {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
     gap: 12px;
   }
-
-  /* --- Search box --- */
-
-  .search-form {
+  .search-panel *,
+  .search-panel *::before,
+  .search-panel *::after {
+    box-sizing: border-box;
+  }
+  .search-panel [hidden] {
+    display: none !important;
+  }
+  .search-panel .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+  .search-panel button,
+  .search-panel select,
+  .search-panel input {
+    font: inherit;
+    color: inherit;
+  }
+  .search-panel button,
+  .search-panel select,
+  .search-panel summary {
+    cursor: pointer;
+  }
+  .search-panel button {
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+  }
+  .search-panel :is(button, select, summary, input):focus-visible {
+    outline: 2px solid var(--color-link);
+    outline-offset: 3px;
+  }
+  .search-panel .search-form {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 10px 14px;
-    background: #fff;
+    padding: 6px 6px 6px 14px;
     border: 1px solid var(--color-border);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow-card);
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 2px 5px #00000006;
   }
-
-  .search-form:focus-within {
-    border-color: var(--color-primary-hover);
+  .search-panel .search-form:focus-within {
+    border-color: var(--color-link);
+    box-shadow: 0 0 0 2px #0066cc12;
   }
-
-  .search-icon {
+  .search-panel .search-icon {
     flex-shrink: 0;
-    color: #999;
+    color: var(--color-text-muted);
   }
-
-  .search-input {
-    flex: 1;
+  .search-panel .search-input {
+    width: 100%;
     min-width: 0;
-    border: none;
+    flex: 1;
+    min-height: 38px;
+    padding: 6px 0;
+    border: 0;
     outline: none;
     background: transparent;
-    font-family: var(--font-family);
-    font-size: 1.05rem;
-    color: var(--color-text);
-    padding: 4px 0;
+    font-size: 1rem;
   }
-
-  .search-input::-webkit-search-cancel-button {
+  .search-panel .search-input::-webkit-search-cancel-button {
     display: none;
   }
-
-  /* An SVG cross centres reliably; a 32px circle keeps it tappable. */
-  .search-clear {
+  .search-panel .search-clear {
     flex-shrink: 0;
-    display: grid;
+    min-width: 32px;
+    min-height: 36px;
+    color: var(--color-text-muted);
+    font-size: 1.25rem;
+  }
+  .search-panel .search-submit {
+    flex-shrink: 0;
+    min-height: 38px;
+    padding: 8px 15px;
+    background: var(--color-primary);
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  .search-panel .search-submit-icon {
+    display: none;
+  }
+  .search-panel .search-submit:hover {
+    background: var(--color-primary-hover);
+  }
+  .search-panel summary::-webkit-details-marker {
+    display: none;
+  }
+  /* One row: disclosure, removable chips, sort. Chips take the free middle
+     and drop to their own line on phones. */
+  .search-panel .search-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .search-panel .search-filter-toggle,
+  .search-panel .search-sort-control select {
+    min-height: 34px;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background-color: #fff;
+    font-size: 0.84rem;
+  }
+  .search-panel .search-filter-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 13px 5px 12px;
+    font-weight: 600;
+  }
+  .search-panel .search-filter-toggle::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    margin: -2px 2px 0 0;
+    border-right: 1.5px solid;
+    border-bottom: 1.5px solid;
+    transform: rotate(45deg);
+  }
+  .search-panel .search-filter-toggle[aria-expanded="true"] {
+    background-color: var(--color-bg-card);
+  }
+  .search-panel .search-filter-toggle[aria-expanded="true"]::before {
+    margin-top: 3px;
+    transform: rotate(-135deg);
+  }
+  .search-panel .search-filter-toggle:hover,
+  .search-panel .search-sort-control select:hover {
+    border-color: var(--color-text-muted);
+  }
+  .search-panel .filter-count {
+    display: inline-grid;
     place-items: center;
-    width: 32px;
-    height: 32px;
-    margin: -4px -6px -4px 0;
-    padding: 0;
-    border: none;
-    border-radius: 50%;
-    background: transparent;
-    color: #999;
-    cursor: pointer;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--color-link);
+    color: #fff;
+    font-size: 0.7rem;
+    line-height: 1;
   }
-
-  .search-clear[hidden] {
-    display: none;
+  .search-panel .search-sort-control {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-left: auto;
   }
-
-  .search-clear:hover {
+  .search-panel .search-sort-control label {
+    color: var(--color-text-muted);
+    font-size: 0.8rem;
+  }
+  .search-panel .search-sort-control select {
+    padding: 5px 10px 5px 12px;
+  }
+  .search-panel .search-filter-panel {
+    padding: 18px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
     background: var(--color-bg-card);
-    color: var(--color-text);
   }
-
-  /* --- Status / sort toggle / empty state --- */
-
-  /* Nothing to report or sort before the first query. */
-  .search-toolbar:has(.search-status:empty) {
+  .search-panel .search-filter-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 20px;
+    align-items: start;
+  }
+  .search-panel .search-filter-fields .filter-group {
+    min-width: 0;
+    max-width: none;
+    gap: 6px;
+  }
+  .search-panel .search-filter-fields .filter-group label,
+  .search-panel .search-filter-fields label,
+  .search-panel .search-date-range legend {
+    display: block;
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 0.78rem;
+    line-height: 1.4;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: normal;
+    white-space: normal;
+    overflow: visible;
+  }
+  .search-panel .search-filter-fields .filter-group select,
+  .search-panel .search-filter-fields select,
+  .search-panel .search-filter-fields input {
+    width: 100%;
+    min-width: 0;
+    min-height: 38px;
+    padding: 7px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    background: #fff;
+    font-size: 0.88rem;
+  }
+  .search-panel .search-date-range {
+    grid-column: 1 / -1;
+    min-width: 0;
+    padding: 0;
+    margin: 0;
+    border: 0;
+  }
+  .search-panel .search-date-range legend {
+    margin-bottom: 6px;
+    padding: 0;
+  }
+  .search-panel .search-date-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+  }
+  .search-panel .search-date-fields > div {
+    display: grid;
+    min-width: 0;
+    gap: 4px;
+  }
+  .search-panel .search-date-fields label {
+    font-weight: 400;
+  }
+  .search-panel .search-filter-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-border);
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+  }
+  .search-panel .filter-hint {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
+  .search-panel .search-date-range .filter-hint {
+    margin-top: 6px;
+  }
+  .search-panel .filter-error {
+    margin: 6px 0 0;
+    color: #b10000;
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
+  .search-panel .search-filter-fields input[aria-invalid="true"] {
+    border-color: #b10000;
+  }
+  .search-panel .search-reset {
+    min-height: 32px;
+    padding: 5px 0;
+    color: var(--color-text-muted);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .search-panel .active-filters {
+    display: flex;
+    flex: 0 1 auto;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-width: 0;
+  }
+  .search-panel .active-filters:empty {
     display: none;
   }
-
-  .search-toolbar {
+  .search-panel .active-filters :is(button, .search-scope) {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+    min-height: 30px;
+    padding: 4px 11px;
+    border: 1px solid color-mix(in srgb, var(--color-link) 25%, #fff);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--color-link) 8%, #fff);
+    color: var(--color-link-hover);
+    font-size: 0.78rem;
+    text-align: left;
+    overflow-wrap: anywhere;
+  }
+  .search-panel .active-filters .search-scope {
+    border-color: var(--color-border);
+    background: var(--color-bg-card);
+    color: var(--color-text-muted);
+  }
+  .search-panel .active-filters button:hover {
+    background: color-mix(in srgb, var(--color-link) 15%, #fff);
+  }
+  .search-panel .chip-remove {
+    font-size: 1rem;
+    line-height: 1;
+  }
+  .search-panel .search-results-heading {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    gap: 4px 12px;
+    min-height: 30px;
   }
-
-  .search-sort {
+  .search-panel .search-status-row {
     display: flex;
-    flex-shrink: 0;
-    border: 1px solid var(--color-border);
-    border-radius: 999px;
-    background: #fff;
-    overflow: hidden;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 10px;
   }
-
-  .search-sort-option {
-    border: none;
-    background: transparent;
-    color: var(--color-text-muted);
-    padding: 5px 14px;
-    font-family: var(--font-family);
-    font-size: 0.84rem;
-    font-weight: 600;
-    cursor: pointer;
+  .search-panel .search-retry {
+    min-height: 32px;
+    padding: 4px 0;
+    color: var(--color-link);
+    font-size: 0.82rem;
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
-
-  .search-sort-option:hover {
-    background: #f3f3f3;
-  }
-
-  .search-sort-option[aria-pressed="true"] {
-    background: var(--color-primary);
-    color: var(--color-text);
-  }
-
-  @media (pointer: coarse) {
-    .search-sort-option {
-      min-height: 36px;
-      padding-inline: 16px;
-    }
-  }
-
-  .search-status {
-    flex: 1 1 200px;
+  .search-panel .search-status {
     margin: 0;
-    padding: 0 2px;
-    min-height: 1.2em;
     color: var(--color-text-muted);
-    font-size: 0.88rem;
-    font-weight: 600;
+    font-size: 0.82rem;
+    line-height: 1.5;
   }
-
-  .search-empty {
-    margin: 0;
-    padding: 24px;
-    text-align: center;
+  .search-panel .search-save {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 32px;
+    padding: 4px 0;
+    color: var(--color-link);
+    font-size: 0.8rem;
+  }
+  .search-panel .search-saved {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 32px;
     color: var(--color-text-muted);
-    font-style: italic;
-    background: #fff;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius);
+    font-size: 0.8rem;
+    text-decoration: none;
   }
-
-  .search-load-trigger {
-    margin: 0;
-    padding: 14px;
-    text-align: center;
-    color: var(--color-text-muted);
-    font-size: 0.85rem;
+  .search-panel .search-saved:hover {
+    color: var(--color-link);
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
-
-  /* --- Result list (items are created client-side) --- */
-
-  .search-results:empty {
-    display: none;
+  .search-panel .search-save:disabled {
+    opacity: 0.5;
+    cursor: default;
   }
-
-  .search-results {
+  .search-panel .search-results {
     list-style: none;
     margin: 0;
     padding: 0;
-    background: #fff;
     border: 1px solid var(--color-border);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow-card);
+    border-radius: 9px;
+    background: #fff;
     overflow: hidden;
   }
-</style>
-
-<style is:global>
+  /* Previous results stay in place while the next set loads. */
+  .search-panel[aria-busy="true"] .search-results {
+    opacity: 0.55;
+    transition: opacity 0.15s 0.1s;
+  }
+  .search-panel .search-results:empty {
+    display: none;
+  }
   .search-panel .search-result {
     border-bottom: 1px solid var(--color-border);
   }
-
   .search-panel .search-result:last-child {
-    border-bottom: none;
+    border: 0;
   }
-
   .search-panel .search-result-link {
     display: grid;
-    gap: 6px;
-    padding: 16px 24px;
-    text-decoration: none;
+    gap: 5px;
+    padding: 16px 20px;
     color: inherit;
+    text-decoration: none;
   }
-
   .search-panel .search-result-link:hover {
-    background: #fafafa;
+    background: #f8fafc;
   }
-
   .search-panel .search-result-title {
-    font-size: 1.05rem;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+    color: var(--color-link);
+    font-size: 1rem;
     font-weight: 600;
     line-height: 1.5;
-    color: var(--color-link);
     overflow-wrap: anywhere;
   }
-
   .search-panel .search-result-link:hover .search-result-title {
-    color: var(--color-link-hover);
     text-decoration: underline;
   }
-
-  .search-panel .search-result-meta {
+  /* The title stays first in the DOM so it leads the link's accessible name;
+     reference and date are shown above it, like the date line on meeting cards. */
+  .search-panel .search-result-identifiers {
+    order: -1;
+    font-variant-numeric: tabular-nums;
+  }
+  .search-panel :is(.search-result-identifiers, .search-result-context) {
+    color: var(--color-text-muted);
+    font-size: 0.78rem;
+    line-height: 1.5;
+  }
+  .search-panel .search-result-reference {
+    color: var(--color-text);
+    font-weight: 600;
+  }
+  .search-panel .search-result-context {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    align-items: center;
+    gap: 4px 10px;
   }
-
-  .search-panel .search-result-chip {
+  .search-panel .search-result-origin {
+    max-width: 100%;
+    padding: 0 8px;
+    overflow: hidden;
     border: 1px solid var(--color-border);
     border-radius: 999px;
-    background: #f8f9fa;
-    padding: 2px 9px;
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: var(--color-text-muted);
-  }
-
-  .search-panel .search-result-chip[data-emphasis="date"] {
-    border-color: var(--color-text-muted);
+    background: var(--color-bg-card);
     color: var(--color-text);
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
-
+  /* Content, not metadata: darker than the meta lines, but a step below body
+     text, since the summary is AI-generated and the excerpt is a fragment. */
   .search-panel .search-result-excerpt {
-    font-size: 0.92rem;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    color: #444;
+    font-size: 0.88rem;
     line-height: 1.6;
-    color: var(--color-text-muted);
     overflow-wrap: anywhere;
   }
-
-  .search-panel .search-result-excerpt mark {
-    background: #fff2b8;
-    color: var(--color-text);
-    padding: 0 1px;
-    border-radius: 2px;
-  }
-
-  .search-panel .search-result-footer {
-    font-size: 0.8rem;
-    color: #888;
-  }
-
-  .search-panel .search-result-footer[data-emphasis="modified"] {
+  /* Visible on every device: the summary is not the paper's own text. */
+  .search-panel .search-result-ai {
+    display: inline-block;
+    margin-right: 6px;
+    padding: 0 5px;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
     color: var(--color-text-muted);
+    font-size: 0.68rem;
     font-weight: 600;
+    line-height: 1.5;
+    vertical-align: 1px;
   }
-
-  @media screen and (max-width: 768px) {
+  .search-panel .search-result-excerpt mark {
+    background: #fff0b5;
+    color: inherit;
+  }
+  .search-panel .search-progress {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 0.78rem;
+    text-align: center;
+  }
+  .search-panel .search-load-trigger {
+    justify-self: center;
+    min-height: 42px;
+    padding: 10px 18px;
+    border: 1px solid var(--color-border);
+    background: #fff;
+    font-size: 0.85rem;
+  }
+  .search-panel .search-load-trigger:disabled {
+    color: var(--color-text-muted);
+  }
+  @media (max-width: 400px) {
+    .search-panel .search-date-fields {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  @media (max-width: 540px) {
+    .search-panel .active-filters {
+      order: 3;
+      flex-basis: 100%;
+    }
+    .search-panel .search-result-title {
+      -webkit-line-clamp: 4;
+    }
+    .search-panel .search-filter-panel {
+      padding: 14px;
+    }
+    .search-panel .search-filter-fields {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 14px;
+    }
+    .search-panel .search-date-fields {
+      gap: 10px;
+    }
+    /* 16px keeps iOS Safari from zooming the page when a control gets focus. */
+    .search-panel .search-sort-control select,
+    .search-panel .search-filter-fields .filter-group select,
+    .search-panel .search-filter-fields input {
+      font-size: 16px;
+    }
     .search-panel .search-result-link {
-      padding: 14px 16px;
+      padding: 14px;
+    }
+    .search-panel .search-form {
+      padding-left: 10px;
+      gap: 7px;
+    }
+    /* Results update while typing, so the submit button shrinks to the
+       magnifier that would otherwise lead the field. */
+    .search-panel .search-icon {
+      display: none;
+    }
+    .search-panel .search-submit {
+      display: grid;
+      place-items: center;
+      min-width: 40px;
+      padding: 0;
+    }
+    .search-panel .search-submit-icon {
+      display: block;
+    }
+    .search-panel .search-submit-label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
     }
   }
 </style>
-
 <script>
   import { initSearchPanel } from "../shared/search-panel-controller";
-
   initSearchPanel();
 </script>

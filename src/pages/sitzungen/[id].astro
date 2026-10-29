@@ -13,6 +13,7 @@ import {
 } from "../../shared/data";
 import { getMeetingStaticPaths } from "../../shared/meeting-paths";
 import {
+  formatDateLong,
   formatDateTime,
   getEffectiveMeetingEnd,
   hasPublishedMeetingEnd,
@@ -24,6 +25,11 @@ import {
   buildMeetingArchiveYearUrl,
   getMeetingYear,
 } from "../../shared/meeting-archive";
+import {
+  formatMeetingDayAndTime,
+  formatMeetingName,
+  getUnnamedOrganizations,
+} from "../../shared/meeting-presentation";
 import type { AuxiliaryFile, Meeting } from "../../shared/types";
 import { buildMeetingDescription } from "../../shared/seo";
 
@@ -44,6 +50,7 @@ const [agenda, organizations, feedCatalog, digestLeads] = await Promise.all([
 ]);
 const baseUrl = import.meta.env.BASE_URL;
 const meetingId = getOParlEntityId(meeting.id);
+const meetingName = formatMeetingName(meeting.name);
 const committeeFeeds = organizations.flatMap((organization) => {
   const feed = feedCatalog.committeeFeedByOrganizationId.get(organization.id);
   return feed ? [{ name: organization.name, url: feed.url }] : [];
@@ -67,9 +74,26 @@ const breadcrumbItems = [
         },
       ]
     : []),
-  { label: meeting.name },
+  { label: meetingName },
 ];
 const hasPublishedEnd = hasPublishedMeetingEnd(meeting.start, meeting.end);
+/** "3. November 2026 um 18:30–20:30 Uhr"; an end on a later day is spelled out. */
+const endsSameDay =
+  hasPublishedEnd &&
+  formatDateLong(meeting.start) === formatDateLong(meeting.end);
+const meetingSlot = !hasPublishedEnd
+  ? `${formatDateTime(meeting.start)} Uhr`
+  : endsSameDay
+    ? `${formatDateTime(meeting.start)}–${formatMeetingDayAndTime(meeting.end).time} Uhr`
+    : `${formatDateTime(meeting.start)} Uhr bis ${formatDateTime(meeting.end)} Uhr`;
+const organizationNames = organizations.map(
+  (organization) => organization.name,
+);
+/* The committee row only earns its place when the title does not already
+   name it — "Sozialausschuss" under "Sozialausschuss" says nothing. */
+const showOrganizations =
+  organizationNames.length === 0 ||
+  getUnnamedOrganizations(meetingName, organizationNames).length > 0;
 const rawDocuments: { label: string; file: AuxiliaryFile }[] = [
   meeting.invitation && { label: "Einladung", file: meeting.invitation },
   meeting.resultsProtocol && {
@@ -94,14 +118,14 @@ const documents = rawDocuments.filter(({ file }) => {
   return true;
 });
 const metaDescription = buildMeetingDescription({
-  name: meeting.name,
+  name: meetingName,
   start: meeting.start,
   agendaItemCount: agenda.length,
 });
 const structuredData = {
   "@context": "https://schema.org",
   "@type": "Event",
-  name: meeting.name,
+  name: meetingName,
   eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
   ...(meeting.start ? { startDate: meeting.start } : {}),
   ...(hasPublishedEnd ? { endDate: meeting.end } : {}),
@@ -122,7 +146,7 @@ const structuredData = {
 ---
 
 <Layout
-  title={meeting.name}
+  title={meetingName}
   description={metaDescription}
   structuredData={structuredData}
   pagefindIgnore
@@ -130,28 +154,14 @@ const structuredData = {
 >
   <PageContainer class="meeting-detail-page">
     <Breadcrumbs items={breadcrumbItems} />
-    <h1 class="page-header">{meeting.name}</h1>
+    <h1 class="page-header">{meetingName}</h1>
 
     <section class="section-card meeting-key-info" data-pagefind-ignore>
       <dl>
         <div>
-          <dt>Beginn</dt>
+          <dt>Termin</dt>
           <dd>
-            <time datetime={meeting.start}>
-              {formatDateTime(meeting.start)} Uhr
-            </time>
-          </dd>
-        </div>
-        <div>
-          <dt>Ende</dt>
-          <dd>
-            {hasPublishedEnd ? (
-              <time datetime={meeting.end}>
-                {formatDateTime(meeting.end)} Uhr
-              </time>
-            ) : (
-              "Nicht angegeben"
-            )}
+            <time datetime={meeting.start}>{meetingSlot}</time>
           </dd>
         </div>
         <div>
@@ -160,14 +170,12 @@ const structuredData = {
             {meeting.location?.description || "Noch nicht veröffentlicht"}
           </dd>
         </div>
-        <div>
-          <dt>Gremium</dt>
-          <dd>
-            {organizations
-              .map((organization) => organization.name)
-              .join(", ") || "Keine Angabe"}
-          </dd>
-        </div>
+        {showOrganizations && (
+          <div>
+            <dt>Gremium</dt>
+            <dd>{organizationNames.join(", ") || "Keine Angabe"}</dd>
+          </div>
+        )}
       </dl>
       <MeetingActions meetingId={meetingId} committeeFeeds={committeeFeeds} />
     </section>
@@ -178,7 +186,7 @@ const structuredData = {
       isPast={isPastMeeting}
     />
 
-    <MeetingAgenda items={agenda} />
+    <MeetingAgenda items={agenda} isPast={isPastMeeting} />
 
     {documents.length > 0 && (
       <section class="section-card" data-pagefind-ignore>
@@ -217,7 +225,7 @@ const structuredData = {
 
   .meeting-key-info {
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     justify-content: space-between;
     gap: 20px;
   }

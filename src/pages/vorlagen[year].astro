@@ -13,4 +13,4 @@ const year = Astro.params.year ?? "";
 const targetUrl = buildPapersUrl(baseUrl, year);
 ---
 
-<LegacyRedirectPage targetUrl={targetUrl} />
+<LegacyRedirectPage targetUrl={targetUrl} preserveSearchAndHash />

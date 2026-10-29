@@ -1,17 +1,66 @@
-<p class="stadtteil-hint" role="note">
-  Hinweis: Die Zuordnung zu Stadtteilen erfolgt automatisch über Texttreffer in
-  den Vorlagen. Deshalb können manchmal unpassende Treffer auftauchen oder
-  passende Vorlagen fehlen.
-</p>
+---
+/**
+ * The classifier caveat, folded to one line. It must stay on every district
+ * page — readers arrive there from search engines and paper pages, not only
+ * from the overview — but four lines of it pushed the search below the fold.
+ */
+---
+
+<details class="stadtteil-hint" data-pagefind-ignore>
+  <summary>Automatisch über Texttreffer zugeordnet</summary>
+  <p>
+    Ein Stadtteil wird einer Vorlage zugeordnet, wenn er darin vorkommt. Eine
+    Erwähnung heißt nicht, dass die Vorlage den Stadtteil betrifft. Deshalb
+    können manchmal unpassende Treffer auftauchen oder passende Vorlagen fehlen.
+  </p>
+</details>
 
 <style>
   .stadtteil-hint {
-    margin: 0 auto 20px;
-    max-width: 760px;
-    padding: 0 8px;
-    font-size: 0.88rem;
+    max-width: 640px;
+    margin: 0 auto 16px;
     color: var(--color-text-muted);
-    text-align: center;
+    font-size: 0.84rem;
     line-height: 1.45;
+    text-align: center;
+  }
+
+  .stadtteil-hint summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .stadtteil-hint summary::-webkit-details-marker {
+    display: none;
+  }
+
+  /* An info mark rather than a caret: it reads as "explain", not "expand". */
+  .stadtteil-hint summary::after {
+    content: "?" / "";
+    display: inline-grid;
+    place-items: center;
+    width: 16px;
+    height: 16px;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    font-size: 0.7rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .stadtteil-hint summary:hover {
+    color: var(--color-text);
+  }
+
+  .stadtteil-hint summary:focus-visible {
+    outline: 2px solid var(--color-link);
+    outline-offset: 2px;
+  }
+
+  .stadtteil-hint p {
+    margin: 6px 0 0;
   }
 </style>

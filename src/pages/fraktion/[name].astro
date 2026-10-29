@@ -1,13 +1,12 @@
 ---
+import { getPaperDetailStaticPaths } from "../../shared/paper-detail-paths";
 import Layout from "../../layouts/Layout.astro";
 import PaperListPage from "../../components/PaperListPage.astro";
 import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import {
   getAvailablePaperSubmitters,
   loadPaperSubmitters,
-  loadPapers,
 } from "../../shared/data";
-import { loadPaperFilterModel } from "../../shared/paper-filters";
 import { getOParlEntityId } from "../../shared/utils";
 
 export async function getStaticPaths() {
@@ -21,7 +20,9 @@ export async function getStaticPaths() {
 const { submitterId, submitterName } = Astro.props;
 const baseUrl = import.meta.env.BASE_URL;
 const [allPapers, submitterIndex] = await Promise.all([
-  loadPapers(),
+  getPaperDetailStaticPaths().then((paths) =>
+    paths.map((path) => path.props.paper),
+  ),
   loadPaperSubmitters(),
 ]);
 
@@ -30,37 +31,21 @@ const papersBySubmitter = allPapers.filter((paper) => {
   return recordId && submitterIndex.papers[recordId]?.includes(submitterId);
 });
 
-const { papers, valuesById, options } =
-  await loadPaperFilterModel(papersBySubmitter);
+const papers = papersBySubmitter;
 ---
 
 <Layout
   title={submitterName}
-  description={`Alle ${papers.length} Vorlagen und Anträge von ${submitterName} im Karlsruher Gemeinderat, nach Jahr und Status filterbar.`}
+  description={`Alle ${papers.length} Vorlagen und Anträge von ${submitterName} im Karlsruher Gemeinderat, mit Volltextsuche und Filtern.`}
   navigationSection="submitters"
 >
-  <PaperListPage
-    title={submitterName}
-    papers={papers}
-    filterValuesById={valuesById}
-    filterOptions={options}
-  >
-    <div slot="intro">
-      <Breadcrumbs
-        items={[
-          { label: "Fraktionen", href: `${baseUrl}fraktionen` },
-          { label: submitterName },
-        ]}
-      />
-      <p class="subtitle">{papers.length} Vorlagen</p>
-    </div>
+  <PaperListPage scope={{ faction: submitterId }} title={submitterName}>
+    <Breadcrumbs
+      slot="breadcrumbs"
+      items={[
+        { label: "Fraktionen", href: `${baseUrl}fraktionen` },
+        { label: submitterName },
+      ]}
+    />
   </PaperListPage>
 </Layout>
-
-<style>
-  .subtitle {
-    text-align: center;
-    color: var(--color-text-muted);
-    margin-bottom: 14px;
-  }
-</style>

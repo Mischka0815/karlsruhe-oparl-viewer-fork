@@ -5,17 +5,12 @@ import MeetingFilters from "../components/MeetingFilters.astro";
 import MeetingList from "../components/MeetingList.astro";
 import MeetingViewTabs from "../components/MeetingViewTabs.astro";
 import CalendarSubscription from "../components/CalendarSubscription.astro";
-import {
-  getPastMeetings,
-  getUpcomingMeetings,
-  loadOrganizations,
-} from "../shared/data";
+import { getUpcomingMeetings, loadOrganizations } from "../shared/data";
 import { buildMeetingFilterModel } from "../shared/meeting-filters";
 import { buildMeetingArchiveUrl } from "../shared/meeting-archive";
 
-const [meetings, pastMeetings, organizationsById] = await Promise.all([
+const [meetings, organizationsById] = await Promise.all([
   getUpcomingMeetings(),
-  getPastMeetings(),
   loadOrganizations(),
 ]);
 const { valuesById: meetingFilterValuesById, options: meetingFilterOptions } =
@@ -34,12 +29,7 @@ const archiveUrl = buildMeetingArchiveUrl(baseUrl);
     <h1 class="page-header">Sitzungen</h1>
     <MeetingViewTabs current="upcoming" />
     <div class="page-intro" data-pagefind-ignore>
-      <p>
-        Öffentliche Termine und Tagesordnungen der Karlsruher Gremien. Neue
-        Tagesordnungspunkte erscheinen, sobald sie veröffentlicht wurden.
-        Vergangene Sitzungen stehen im <a href={archiveUrl}>Archiv</a> (
-        {pastMeetings.length} Sitzungen).
-      </p>
+      <p>Termine und öffentliche Tagesordnungen der Karlsruher Gremien.</p>
       <CalendarSubscription />
     </div>
 
@@ -72,13 +62,13 @@ const archiveUrl = buildMeetingArchiveUrl(baseUrl);
   }
 
   .page-intro {
-    margin: 0 auto 20px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 16px;
+    margin: 0 0 18px;
     color: var(--color-text-muted);
-  }
-
-  .page-intro {
-    display: grid;
-    gap: 14px;
   }
 
   .page-intro p {

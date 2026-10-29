@@ -6,7 +6,6 @@ import {
   type MeetingSelectFilterDefinition,
   type MeetingSelectFilterKey,
 } from "./meeting-filter-definitions";
-import { initResponsiveFilterPanel } from "./responsive-filters-panel";
 import { getDateTimestamp } from "./utils";
 
 const INIT_DATA_KEY = "meetingFiltersInitialized";
@@ -40,8 +39,20 @@ interface MeetingListItem {
 interface MeetingFilterContext {
   controls: FilterControls;
   items: MeetingListItem[];
+  /** Month sections of `MeetingList`; hidden when none of their rows match. */
+  groups: HTMLElement[];
   status: HTMLElement | null;
   noResults: HTMLElement | null;
+  toggle: HTMLButtonElement | null;
+  activeFilters: HTMLElement | null;
+  filterCount: HTMLElement | null;
+  /** Re-applies and syncs the URL after a chip removed its filter. */
+  onChange: () => void;
+}
+
+interface ActiveFilter {
+  label: string;
+  clear: () => void;
 }
 
 function parseDelimitedValues(raw: string | null): Set<string> {
@@ -186,6 +197,15 @@ function syncFilterStateToUrl(controls: FilterControls): void {
   const url = new URL(window.location.href);
   const state = readFilterState(controls);
 
+  if (state.bodyType) {
+    url.searchParams.set(
+      MEETING_FILTER_QUERY_PARAMETERS.bodyType,
+      state.bodyType,
+    );
+  } else {
+    url.searchParams.delete(MEETING_FILTER_QUERY_PARAMETERS.bodyType);
+  }
+
   for (const field of controls.fields) {
     const parameter = MEETING_FILTER_QUERY_PARAMETERS[field.key];
     const value = state[field.key];
@@ -256,6 +276,76 @@ function updateStatus(
     : `${totalCount} Sitzungen`;
 }
 
+/** The panel's filters with a value — the body-type chips show their own state. */
+function describeActiveFilters(controls: FilterControls): ActiveFilter[] {
+  const active: ActiveFilter[] = [];
+
+  for (const field of controls.fields) {
+    const control = controls[field.key];
+    if (!control?.value) continue;
+    const option =
+      control.selectedOptions[0]?.textContent?.trim() || control.value;
+    active.push({
+      label: `${field.label}: ${option}`,
+      clear: () => {
+        control.value = "";
+      },
+    });
+  }
+
+  const search = controls.search.value.trim();
+  if (search) {
+    active.push({
+      label: `„${search}“`,
+      clear: () => {
+        controls.search.value = "";
+      },
+    });
+  }
+
+  return active;
+}
+
+function renderActiveFilters(context: MeetingFilterContext): void {
+  const active = describeActiveFilters(context.controls);
+
+  if (context.filterCount) {
+    context.filterCount.textContent = String(active.length);
+    context.filterCount.hidden = active.length === 0;
+  }
+  if (context.toggle) {
+    context.toggle.setAttribute(
+      "aria-label",
+      active.length > 0 ? `Filter (${active.length} aktiv)` : "Filter",
+    );
+  }
+
+  const container = context.activeFilters;
+  if (!container) return;
+
+  container.replaceChildren(
+    ...active.map((filter, index) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.setAttribute("aria-label", `Filter entfernen: ${filter.label}`);
+      const remove = document.createElement("span");
+      remove.className = "chip-remove";
+      remove.setAttribute("aria-hidden", "true");
+      remove.textContent = "×";
+      button.append(filter.label, remove);
+      button.addEventListener("click", () => {
+        filter.clear();
+        context.onChange();
+        // The chip is gone; keep focus in the toolbar rather than dropping it
+        // to the page.
+        const chips = container.querySelectorAll<HTMLButtonElement>("button");
+        (chips[Math.min(index, chips.length - 1)] ?? context.toggle)?.focus();
+      });
+      return button;
+    }),
+  );
+}
+
 function applyFilters(context: MeetingFilterContext): void {
   const state = readFilterState(context.controls);
   const now = Date.now();
@@ -267,7 +357,12 @@ function applyFilters(context: MeetingFilterContext): void {
     if (isMatch) matchingCount += 1;
   }
 
+  for (const group of context.groups) {
+    group.hidden = !group.querySelector("[data-meeting-item]:not([hidden])");
+  }
+
   updateStatus(context.status, state, matchingCount, context.items.length);
+  renderActiveFilters(context);
   if (context.noResults) context.noResults.hidden = matchingCount > 0;
 }
 
@@ -289,35 +384,44 @@ function initMeetingFilterElement(container: HTMLElement): void {
   if (!controls) return;
 
   container.dataset[INIT_DATA_KEY] = "true";
+  const scope = container.parentElement ?? document.body;
   const context: MeetingFilterContext = {
     controls,
-    items: collectMeetingItems(container.parentElement ?? document.body),
+    items: collectMeetingItems(scope),
+    groups: Array.from(
+      scope.querySelectorAll<HTMLElement>("[data-meeting-group]"),
+    ),
     status: container.querySelector<HTMLElement>(
       "[data-meeting-filter-status]",
     ),
-    noResults:
-      container.parentElement?.querySelector<HTMLElement>(
-        "[data-meeting-no-results]",
-      ) ?? null,
+    noResults: scope.querySelector<HTMLElement>("[data-meeting-no-results]"),
+    toggle: container.querySelector<HTMLButtonElement>(
+      "[data-meeting-filter-toggle]",
+    ),
+    activeFilters: container.querySelector<HTMLElement>(
+      "[data-meeting-active-filters]",
+    ),
+    filterCount: container.querySelector<HTMLElement>(
+      "[data-meeting-filter-count]",
+    ),
+    onChange: () => {},
   };
 
-  const advancedFilters = container.querySelector<HTMLElement>(
-    "[data-filters-panel]",
+  const panel = container.querySelector<HTMLElement>(
+    "[data-meeting-filter-panel]",
   );
-  if (advancedFilters) {
-    initResponsiveFilterPanel(advancedFilters, {
-      initiallyExpanded: false,
-      alwaysCollapsible: true,
-      expandedLabel: "Erweiterte Filter ausblenden",
-      collapsedLabel: "Erweiterte Filter",
-    });
-  }
+  context.toggle?.addEventListener("click", () => {
+    if (!panel) return;
+    panel.hidden = !panel.hidden;
+    context.toggle?.setAttribute("aria-expanded", String(!panel.hidden));
+  });
   applyFilterStateFromUrl(controls);
 
   const applyAndSync = () => {
     applyFilters(context);
     syncFilterStateToUrl(controls);
   };
+  context.onChange = applyAndSync;
 
   for (const option of controls.bodyTypeOptions) {
     option.addEventListener("click", () => {

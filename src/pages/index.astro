@@ -1,4 +1,6 @@
 ---
+import { getUpcomingMeetings } from "../shared/data";
+import { buildMeetingUrl } from "../shared/utils";
 import Layout from "../layouts/Layout.astro";
 import PageContainer from "../components/PageContainer.astro";
 import SearchPanel from "../components/SearchPanel.astro";
@@ -6,6 +8,23 @@ import { resolvePagefindAvailability } from "../shared/pagefind-server";
 
 const pagefind = resolvePagefindAvailability(import.meta.env.SKIP_PAGEFIND, {
   isDev: import.meta.env.DEV,
+});
+// A few sessions ahead, so the page stays correct between builds: the inline
+// script below shows the first that has not yet ended.
+const nextMeetings = (await getUpcomingMeetings())
+  .filter((meeting) =>
+    meeting.organization?.includes(
+      "https://web2.karlsruhe.de/ris/oparl/bodies/0001/organizations/gr/32130",
+    ),
+  )
+  .slice(0, 3);
+const formatMeetingStart = new Intl.DateTimeFormat("de-DE", {
+  timeZone: "Europe/Berlin",
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+  hour: "2-digit",
+  minute: "2-digit",
 });
 const baseUrl = import.meta.env.BASE_URL;
 const siteUrl = Astro.site ? new URL(baseUrl, Astro.site).href : undefined;
@@ -23,7 +42,7 @@ const structuredData = siteUrl
         "@type": "SearchAction",
         target: {
           "@type": "EntryPoint",
-          urlTemplate: `${siteUrl}suche?q={search_term_string}`,
+          urlTemplate: `${siteUrl}?q={search_term_string}`,
         },
         "query-input": "required name=search_term_string",
       },
@@ -38,54 +57,39 @@ const structuredData = siteUrl
 >
   <PageContainer class="search-page" width="search">
     <header class="search-intro">
-      <h1 class="page-header">GemeinderatsRadar</h1>
-      <p class="search-tagline">
-        Volltextsuche über Vorlagen, Tagesordnungspunkte und Dokumente des
-        Karlsruher Gemeinderats.
-      </p>
+      <div class="search-heading">
+        <h1 class="page-header">Vorlagen durchsuchen</h1>
+        <p class="search-tagline">
+          Themen, Anträge und Entscheidungen aus Karlsruhe.
+        </p>
+      </div>
+      {nextMeetings.map((meeting, index) => (
+        <a
+          class="next-meeting"
+          href={buildMeetingUrl(baseUrl, meeting)}
+          data-next-meeting
+          data-ends={meeting.end || meeting.start}
+          hidden={index > 0}
+        >
+          <span class="meeting-label">Nächster Gemeinderat:</span>{" "}
+          <time datetime={meeting.start}>
+            {formatMeetingStart.format(new Date(meeting.start))} Uhr
+          </time>{" "}
+          <span aria-hidden="true">→</span>
+        </a>
+      ))}
+      <script is:inline>
+        (() => {
+          const links = document.querySelectorAll("[data-next-meeting]");
+          const next = [...links].find(
+            (link) => Date.parse(link.dataset.ends) > Date.now(),
+          );
+          for (const link of links) link.hidden = link !== next;
+        })();
+      </script>
     </header>
     {pagefind.enabled ? (
-      <SearchPanel sortMode="relevance" showSortToggle>
-        <div
-          class="saved-search-controls"
-          slot="actions"
-          data-pagefind-ignore
-          data-saved-search-controls
-        >
-          <div class="saved-search-actions">
-            <button
-              type="button"
-              class="saved-search-button"
-              data-save-search-button
-              disabled
-            >
-              <svg
-                class="saved-search-icon"
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="currentColor"
-                aria-hidden="true"
-              >
-                <path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v13.5a.5.5 0 0 1-.777.416L8 13.101l-5.223 2.815A.5.5 0 0 1 2 15.5V2z" />
-              </svg>
-              Suche speichern
-            </button>
-            <a
-              class="saved-search-link-button"
-              href={`${baseUrl}gespeicherte-suchen`}
-              data-saved-searches-link
-            >
-              Gespeicherte Suchen
-            </a>
-          </div>
-          <p
-            class="saved-search-status"
-            data-save-search-status
-            aria-live="polite"
-          />
-        </div>
-      </SearchPanel>
+      <SearchPanel />
     ) : (
       <p class="search-disabled" role="status">
         {pagefind.disabledMessage}
@@ -95,26 +99,60 @@ const structuredData = siteUrl
 </Layout>
 
 <style>
+  /* A single quiet line: the next session is a pointer, not a home-page module. */
+  .next-meeting {
+    color: var(--color-link);
+    font-size: 0.84rem;
+    line-height: 1.45;
+    text-decoration: none;
+  }
+  .next-meeting:hover time {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .next-meeting:focus-visible {
+    outline: 2px solid var(--color-link);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+  .meeting-label {
+    color: var(--color-text-muted);
+  }
+  .next-meeting time {
+    font-weight: 600;
+    white-space: nowrap;
+  }
   .search-page {
+    grid-template-columns: minmax(0, 1fr);
     display: grid;
     gap: 14px;
   }
 
   .search-intro {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 6px 24px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+
+  .search-heading {
     display: grid;
-    gap: 8px;
-    margin-bottom: 6px;
-    text-align: center;
+    gap: 5px;
+    min-width: 0;
   }
 
   .search-intro .page-header {
     margin: 0;
+    text-align: left;
+    font-size: clamp(1.4rem, 1.2rem + 0.7vw, 1.8rem);
   }
 
   .search-tagline {
     margin: 0;
     color: var(--color-text-muted);
-    font-size: clamp(0.95rem, 0.9rem + 0.3vw, 1.05rem);
+    font-size: 0.9rem;
     line-height: 1.45;
     text-wrap: balance;
   }
@@ -129,106 +167,4 @@ const structuredData = siteUrl
     text-align: center;
     font-size: 0.92rem;
   }
-
-  .saved-search-controls {
-    display: grid;
-    gap: 6px;
-  }
-
-  .saved-search-actions {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 10px;
-  }
-
-  .saved-search-button,
-  .saved-search-link-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    min-height: 38px;
-    box-sizing: border-box;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius);
-    color: var(--color-text);
-    padding: 8px 14px;
-    font-family: var(--font-family);
-    font-size: 0.9rem;
-    font-weight: 600;
-    white-space: nowrap;
-    text-decoration: none;
-    transition: background 0.2s;
-  }
-
-  .saved-search-button {
-    background: var(--color-primary);
-    cursor: pointer;
-  }
-
-  .saved-search-button:hover:not(:disabled) {
-    background: var(--color-primary-hover);
-  }
-
-  .saved-search-button:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-  }
-
-  .saved-search-button :global(.saved-search-icon) {
-    flex-shrink: 0;
-  }
-
-  .saved-search-link-button {
-    background: #fff;
-  }
-
-  .saved-search-link-button:hover {
-    background: #f3f3f3;
-  }
-
-  /* On phones the two actions share a row where it fits (~375px and up) and
-     otherwise take a full row each, rather than wrapping into a ragged stack. */
-  @media screen and (max-width: 600px) {
-    .saved-search-actions {
-      gap: 8px;
-    }
-
-    .saved-search-button,
-    .saved-search-link-button {
-      flex: 1 1 auto;
-      min-height: 44px;
-      padding-inline: 10px;
-      font-size: 0.85rem;
-    }
-  }
-
-  .saved-search-status {
-    margin: 0;
-    text-align: center;
-    color: var(--color-text-muted);
-    font-size: 0.84rem;
-    min-height: 1.2em;
-    line-height: 1.2;
-    transition: opacity 0.3s;
-  }
-
-  .saved-search-status:empty {
-    min-height: 0;
-  }
-
-  .saved-search-status[data-state="error"] {
-    color: #b10000;
-  }
-
-  .saved-search-status[data-state="info"] {
-    color: #0f5132;
-  }
 </style>
-
-<script>
-  import { initIndexSavedSearchControl } from "../shared/index-saved-search-control";
-
-  initIndexSavedSearchControl();
-</script>
