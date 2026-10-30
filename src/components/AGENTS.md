@@ -28,7 +28,7 @@ Reusable UI components. Prefer extending existing components over creating new o
 | `MeetingDigest.astro`        | Generated sitting preview — shell only, filled at runtime         |
 | `MeetingAgenda.astro`        | Public agenda with links to matching papers                       |
 | `PaperTimeline.astro`        | Paper lifecycle, consultations, and decisions                     |
-| `RelatedPapers.astro`        | Procedural links + collapsed topical recommendations             |
+| `RelatedPapers.astro`        | Procedural links + collapsed topical recommendations              |
 
 ## Reuse Rules
 
@@ -38,6 +38,22 @@ Reusable UI components. Prefer extending existing components over creating new o
 - Use `FilterSelect` for every filter dropdown; do not build ad-hoc selects
 
 ## Contracts — Do Not Break
+
+**Paper change history** — `PaperHistory` is collapsed and Pagefind-ignored.
+Opening it loads the mirror's per-paper git history through the public GitHub
+API; document text histories load separately only when that document is opened.
+Current attachments seed the document list, and loaded paper revisions add old
+attachments. Render fetched data only with `textContent`. Dates are archive
+capture times, not proven publication/change dates. The oldest per-file commit
+is an archive boundary, not the first publication: pre-sharding monolithic
+history is not included. PDF comparisons use extracted text, so extraction
+changes may appear as edits; different file ids have separate histories.
+Keep source links and retry buttons available when GitHub requests fail or hit
+the public rate limit. Do not embed archive snapshots in built HTML; the only
+embedded data is `data-history-labels`, display names for the organizations,
+meetings, and related papers the current record references, keyed by
+body-relative path. Unresolved references render as "Sitzung 1284", never as
+raw OParl URLs. Revisions without a visible change collapse into one row.
 
 **Related papers** — OParl parent/child links stay visible. Optional topical
 recommendations from `paper-similar.json` live in the same card behind a native

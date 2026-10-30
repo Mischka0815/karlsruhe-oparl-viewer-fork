@@ -1,0 +1,573 @@
+---
+import { formatMeetingName } from "../shared/meeting-presentation";
+import {
+  historyEntityKey,
+  paperHistoryPath,
+  paperHistoryUrl,
+  type HistoryLabels,
+} from "../shared/paper-history";
+import type {
+  Organization,
+  Paper,
+  ResolvedConsultation,
+} from "../shared/types";
+import { formatDateShort } from "../shared/utils";
+
+interface Props {
+  paperId: string;
+  files: { id: string; name: string }[];
+  organizations: Organization[];
+  consultations: ResolvedConsultation[];
+  relatedPapers: Paper[];
+}
+
+const { paperId, files, organizations, consultations, relatedPapers } =
+  Astro.props;
+const path = paperHistoryPath(paperId);
+
+// Names for the entities the current record references, so changes read
+// "Gemeinderat am 12.03.2024" rather than an OParl URL. Older revisions may
+// reference others; those fall back to "Sitzung 1284" in the browser.
+const labels: HistoryLabels = {};
+for (const organization of organizations) {
+  labels[historyEntityKey(organization.id)] = organization.name;
+}
+for (const { meeting } of consultations) {
+  if (!meeting) continue;
+  const date = formatDateShort(meeting.start);
+  labels[historyEntityKey(meeting.id)] =
+    `${formatMeetingName(meeting.name)}${date ? ` am ${date}` : ""}`;
+}
+for (const paper of relatedPapers) {
+  const name =
+    paper.name.length > 80 ? `${paper.name.slice(0, 79)}…` : paper.name;
+  labels[historyEntityKey(paper.id)] = `${paper.reference}: ${name}`;
+}
+---
+
+{path && (
+  <section class="section-card paper-history" data-pagefind-ignore>
+    <details
+      data-paper-history={paperId}
+      data-history-labels={JSON.stringify(labels)}
+    >
+      <summary>
+        <h2 class="section-heading">Änderungshistorie</h2>
+        <span class="history-summary-hint">
+          Frühere Stände der Vorlage und ihrer Dokumente vergleichen
+        </span>
+      </summary>
+
+      <div class="history-body">
+        <h3>Vorlagendaten</h3>
+        <p class="history-intro">
+          Neueste zuerst. Jeder Eintrag zeigt, was sich gegenüber dem vorherigen
+          archivierten Stand an Titel, Eckdaten, Anlagen oder Beratungen
+          geändert hat.
+        </p>
+        <p class="history-status" data-history-status role="status">
+          Beim Öffnen werden die archivierten Stände geladen.
+        </p>
+        <ol class="history-timeline" data-history-list></ol>
+        <button type="button" class="history-more" data-history-more hidden>
+          Ältere Stände laden
+        </button>
+
+        <h3>Dokumenttexte</h3>
+        <p class="history-intro">
+          Ein Dokument öffnen, um seinen extrahierten Text zwischen archivierten
+          Ständen zu vergleichen.
+        </p>
+        <div class="history-documents" data-history-documents>
+          {files.map((file) => (
+            <span data-history-file={file.id.split("/").at(-1)}>
+              {file.name}
+            </span>
+          ))}
+        </div>
+
+        <div class="history-footnote">
+          <ul>
+            <li>
+              Zeitangaben zeigen, wann ein Stand im Datenarchiv erfasst wurde,
+              nicht zwingend den Änderungszeitpunkt.
+            </li>
+            <li>
+              Stände vor der Umstellung auf Einzeldateien sind nicht enthalten.
+            </li>
+            <li>
+              Textvergleiche beruhen auf der PDF-Textextraktion; Unterschiede
+              können auch durch sie entstehen. Dokumente mit neuer Dateinummer
+              haben eine eigene Historie.
+            </li>
+          </ul>
+          <a href={paperHistoryUrl(path)}>
+            Vollständige Quellhistorie auf GitHub
+          </a>
+        </div>
+        <noscript>
+          Die Änderungshistorie ist über den Link zu GitHub verfügbar.
+        </noscript>
+      </div>
+    </details>
+  </section>
+)}
+
+<style is:global>
+  /* Global: almost everything below is created by the history loaders. */
+  .paper-history {
+    --history-added-bg: #e7f4ea;
+    --history-added-text: #17552a;
+    --history-removed-bg: #fdecec;
+    --history-removed-text: #8a1c1c;
+  }
+
+  .paper-history > details > summary {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    column-gap: 10px;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .paper-history > details > summary::-webkit-details-marker,
+  .paper-history .history-document > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  /* Same caret as the extracted-text toggle, sized for a card heading. */
+  .paper-history > details > summary::before,
+  .paper-history .history-document > summary::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    margin: 0 4px 0 2px;
+    border-right: 2px solid var(--color-text-muted);
+    border-bottom: 2px solid var(--color-text-muted);
+    transform: rotate(-45deg);
+    transition: transform 0.15s;
+  }
+
+  .paper-history > details[open] > summary::before,
+  .paper-history .history-document[open] > summary::before {
+    transform: rotate(45deg);
+  }
+
+  .paper-history summary:focus-visible {
+    outline: 3px solid #175f94;
+    outline-offset: 3px;
+  }
+
+  .paper-history > details > summary .section-heading {
+    margin: 0;
+  }
+
+  .paper-history .history-summary-hint {
+    grid-column: 2;
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+  }
+
+  .paper-history > details[open] .history-summary-hint {
+    display: none;
+  }
+
+  .paper-history .history-body {
+    margin-top: 14px;
+  }
+
+  .paper-history h3 {
+    margin: 22px 0 4px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+  }
+
+  .paper-history .history-body > h3:first-child {
+    margin-top: 0;
+  }
+
+  .paper-history .history-intro,
+  .paper-history .history-status {
+    margin: 0 0 12px;
+    max-width: 68ch;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--color-text-muted);
+  }
+
+  .paper-history .history-status {
+    font-style: italic;
+  }
+
+  /* Timeline: same marker and connector as the "Verlauf" card. */
+  .paper-history .history-timeline {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .paper-history .history-entry {
+    position: relative;
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr);
+    gap: 12px;
+    padding-bottom: 18px;
+  }
+
+  .paper-history .history-entry:last-child {
+    padding-bottom: 0;
+  }
+
+  .paper-history .history-entry:not(:last-child)::before {
+    content: "";
+    position: absolute;
+    left: 7px;
+    top: 15px;
+    bottom: 0;
+    width: 2px;
+    background: var(--color-border);
+  }
+
+  .paper-history .history-marker {
+    width: 12px;
+    height: 12px;
+    margin-top: 3px;
+    border: 2px solid var(--color-primary-hover);
+    border-radius: 50%;
+    background: var(--color-primary);
+    z-index: 1;
+  }
+
+  /* Revisions without a visible change recede: smaller, hollow, muted. */
+  .paper-history .history-entry[data-kind="quiet"] .history-marker {
+    width: 8px;
+    height: 8px;
+    margin: 5px 0 0 2px;
+    border-color: var(--color-border);
+    background: #fff;
+  }
+
+  .paper-history .history-entry[data-kind="origin"] .history-marker {
+    background: #fff;
+  }
+
+  .paper-history .history-entry-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 12px;
+  }
+
+  .paper-history .history-date {
+    font-weight: 700;
+  }
+
+  .paper-history .history-count {
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+  }
+
+  .paper-history .history-source {
+    margin-left: auto;
+    font-size: 0.8125rem;
+    color: var(--color-link);
+  }
+
+  .paper-history .history-quiet,
+  .paper-history .history-origin {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+  }
+
+  .paper-history .history-quiet-dates {
+    margin: 2px 0 0;
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+  }
+
+  .paper-history .history-quiet-dates .history-source {
+    margin: 0;
+  }
+
+  .paper-history .history-origin {
+    margin-top: 4px;
+  }
+
+  .paper-history .history-origin-title {
+    margin: 6px 0 0;
+    padding-left: 10px;
+    border-left: 3px solid var(--color-border);
+    font-size: 0.875rem;
+    overflow-wrap: anywhere;
+  }
+
+  /* Each change: field on the left, old → new on the right; stacks when narrow. */
+  .paper-history .history-changes {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+  }
+
+  .paper-history .history-change {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+    padding: 10px 12px;
+    font-size: 0.875rem;
+    line-height: 1.45;
+  }
+
+  .paper-history .history-change:not(:last-child) {
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  @media (min-width: 40rem) {
+    .paper-history .history-change {
+      grid-template-columns: 11rem minmax(0, 1fr);
+      gap: 12px;
+    }
+  }
+
+  .paper-history .history-label {
+    font-weight: 700;
+  }
+
+  .paper-history .history-tag {
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: #eef0f2;
+    color: var(--color-text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .paper-history .history-change[data-kind="added"] .history-tag {
+    background: var(--history-added-bg);
+    color: var(--history-added-text);
+  }
+
+  .paper-history .history-change[data-kind="removed"] .history-tag {
+    background: var(--history-removed-bg);
+    color: var(--history-removed-text);
+  }
+
+  .paper-history .history-values {
+    display: grid;
+    justify-items: start;
+    gap: 4px;
+    overflow-wrap: anywhere;
+  }
+
+  .paper-history .history-values :is(del, ins) {
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+
+  .paper-history .history-values del {
+    background: var(--history-removed-bg);
+    color: var(--history-removed-text);
+    text-decoration-color: rgb(138 28 28 / 0.45);
+  }
+
+  .paper-history .history-values ins {
+    background: var(--history-added-bg);
+    color: var(--history-added-text);
+    text-decoration: none;
+  }
+
+  .paper-history .history-change-note {
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+  }
+
+  .paper-history button {
+    min-height: 36px;
+    margin-top: 14px;
+    padding: 6px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: #fff;
+    color: var(--color-link);
+    font: inherit;
+    font-size: 0.875rem;
+    cursor: pointer;
+  }
+
+  .paper-history button:hover {
+    background: var(--color-bg-card);
+    border-color: #c4c4c4;
+  }
+
+  .paper-history button:focus-visible {
+    outline: 3px solid #175f94;
+    outline-offset: 2px;
+  }
+
+  /* Documents: one bordered list of disclosures, like the related papers. */
+  .paper-history [data-history-file] {
+    display: none;
+  }
+
+  .paper-history .history-documents {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+  }
+
+  .paper-history .history-documents:empty {
+    display: none;
+  }
+
+  .paper-history .history-document:not(:last-child) {
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .paper-history .history-document > summary {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: 10px;
+    padding: 10px 12px;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .paper-history .history-document > summary:hover {
+    background: #fafafa;
+  }
+
+  .paper-history .history-document-name {
+    color: var(--color-link);
+    overflow-wrap: anywhere;
+  }
+
+  .paper-history .history-document-meta {
+    grid-column: 2;
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+  }
+
+  .paper-history .history-document-body {
+    padding: 4px 12px 14px;
+  }
+
+  .paper-history .history-revisions {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .paper-history .history-revision {
+    padding: 10px 0;
+  }
+
+  .paper-history .history-revision:not(:last-child) {
+    border-bottom: 1px dashed var(--color-border);
+  }
+
+  .paper-history .history-revision .history-quiet,
+  .paper-history .history-revision .history-origin {
+    margin-top: 2px;
+  }
+
+  .paper-history .diff-stat-added {
+    color: var(--history-added-text);
+    font-weight: 700;
+  }
+
+  .paper-history .diff-stat-removed {
+    color: var(--history-removed-text);
+    font-weight: 700;
+  }
+
+  .paper-history .history-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+  }
+
+  .paper-history .history-actions .history-source {
+    margin: 14px 0 0;
+  }
+
+  .paper-history .history-actions button {
+    margin-right: auto;
+  }
+
+  /* Text diff: sign gutter plus wrapped line, colored per change. */
+  .paper-history .history-text-diff {
+    margin-top: 8px;
+    max-height: 32rem;
+    overflow: auto;
+    padding: 4px 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+  }
+
+  .paper-history .diff-line {
+    display: grid;
+    grid-template-columns: 1.5rem minmax(0, 1fr);
+    padding-right: 10px;
+    color: var(--color-text-muted);
+    text-decoration: none;
+  }
+
+  .paper-history .diff-line[data-change="added"] {
+    background: var(--history-added-bg);
+    color: var(--history-added-text);
+  }
+
+  .paper-history .diff-line[data-change="removed"] {
+    background: var(--history-removed-bg);
+    color: var(--history-removed-text);
+  }
+
+  .paper-history .diff-sign {
+    text-align: center;
+    font-weight: 700;
+    user-select: none;
+  }
+
+  .paper-history .diff-text {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .paper-history .diff-gap {
+    margin: 4px 0;
+    padding: 2px 0 2px 1.5rem;
+    background: var(--color-bg-card);
+    border-block: 1px solid var(--color-border);
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+  }
+
+  .paper-history .history-footnote {
+    margin-top: 22px;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-border);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: var(--color-text-muted);
+  }
+
+  .paper-history .history-footnote ul {
+    margin: 0 0 8px;
+    padding-left: 18px;
+  }
+</style>
+
+<script>
+  import { initPaperHistoryLoader } from "../shared/paper-history-loader";
+  initPaperHistoryLoader();
+</script>

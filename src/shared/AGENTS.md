@@ -18,7 +18,7 @@ Data fetching, caching, filtering logic, utilities, and TypeScript types.
 | `meeting-filter-controller.ts`  | Client-side meeting filtering and URL synchronization    |
 | `meeting-presentation.ts`       | Display name, month groups, row date/time for meetings   |
 | `paper-presentation.ts`         | Hides import artifacts: bulk stamp, placeholder offices  |
-| `paper-similarity.ts`           | Topical recommendations in mirror order                 |
+| `paper-similarity.ts`           | Topical recommendations in mirror order                  |
 | `paper-detail-paths.ts`         | Maps paper references to URL slugs                       |
 | `meeting-paths.ts`              | Maps OParl meeting IDs to meeting detail routes          |
 | `meeting-calendar.ts`           | Serializes one meeting as an RFC 5545 calendar event     |
@@ -33,6 +33,15 @@ Data fetching, caching, filtering logic, utilities, and TypeScript types.
 | `types/`                        | All TypeScript type contracts                            |
 
 ## Data Flow
+
+Optional paper change history is handled by `paper-history.ts` (public GitHub
+requests and diffs), `paper-history-loader.ts` (paper revisions and historical
+attachments), and `paper-document-history-loader.ts` (independent extracted-text
+history). These are browser-only on-demand requests, not build-time data inputs.
+Pagination pins its revision after the first page; snapshots are reused within
+each view, and failed loads remain retryable. Text diff work and rendered
+comparison size are bounded for large documents. See the component guide for
+coverage and provenance constraints.
 
 ```
 syndication-data/docs (data-source.ts, DATA_LOCAL_DIR)

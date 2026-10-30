@@ -9,6 +9,7 @@ import PaperHeader from "../../components/PaperHeader.astro";
 import PaperFacts from "../../components/PaperFacts.astro";
 import PaperSummary from "../../components/PaperSummary.astro";
 import PaperTimeline from "../../components/PaperTimeline.astro";
+import PaperHistory from "../../components/PaperHistory.astro";
 import RelatedPapers from "../../components/RelatedPapers.astro";
 import AuxiliaryFiles from "../../components/AuxiliaryFiles.astro";
 import {
@@ -144,6 +145,16 @@ const structuredData = {
         <PaperSummary summary={summary} />
         <PaperTimeline paper={paper} consultations={consultations} />
         <AuxiliaryFiles auxiliaryFiles={auxiliaryFiles} />
+        <PaperHistory
+          paperId={paper.id}
+          files={paper.auxiliaryFile ?? []}
+          organizations={organizations}
+          consultations={consultations}
+          relatedPapers={[
+            ...relatedPapers.superordinated,
+            ...relatedPapers.subordinated,
+          ]}
+        />
       </div>
 
       <aside class="detail-side" aria-label="Weitere Angaben zur Vorlage">
