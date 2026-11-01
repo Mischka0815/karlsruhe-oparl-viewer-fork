@@ -4,6 +4,7 @@ import {
   type SearchState,
 } from "./search-state.ts";
 export const SAVED_SEARCHES_STORAGE_KEY = "gemeinderatsradar.saved-searches";
+export const SAVED_SEARCHES_CHANGED_EVENT = "saved-searches-changed";
 export const SAVED_SEARCH_QUERY_PARAM = "q";
 export const SAVED_SEARCH_RESULTS_PATH = "";
 export const MAX_SAVED_SEARCHES = 25;
@@ -87,6 +88,9 @@ export function writeSavedSearches(
       SAVED_SEARCHES_STORAGE_KEY,
       JSON.stringify(sanitizeSavedSearches(searches)),
     );
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event(SAVED_SEARCHES_CHANGED_EVENT));
+    }
     return true;
   } catch {
     return false;

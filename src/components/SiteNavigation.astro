@@ -5,6 +5,7 @@ import {
   type NavigationItem,
   type NavigationSection,
 } from "../shared/navigation";
+import { resolvePagefindAvailability } from "../shared/pagefind-server";
 
 interface Props {
   currentSection?: NavigationSection;
@@ -12,13 +13,22 @@ interface Props {
 
 const { currentSection } = Astro.props;
 const baseUrl = import.meta.env.BASE_URL;
+const pagefind = resolvePagefindAvailability(import.meta.env.SKIP_PAGEFIND, {
+  isDev: import.meta.env.DEV,
+});
 
 function itemUrl(item: NavigationItem): string {
   return `${baseUrl}${item.path}`;
 }
 ---
 
-<header class="site-header" data-site-header data-pagefind-ignore>
+<header
+  class="site-header"
+  data-site-header
+  data-pagefind-ignore
+  data-base-url={baseUrl}
+  data-pagefind-enabled={String(pagefind.enabled)}
+>
   <div class="nav-container">
     <a class="brand" href={baseUrl} aria-label="GemeinderatsRadar – Startseite">
       <span class="brand-name">GemeinderatsRadar</span>
@@ -32,11 +42,18 @@ function itemUrl(item: NavigationItem): string {
       aria-controls="site-menu"
       aria-expanded="false"
       data-menu-button
+      aria-describedby="saved-search-updates"
     >
       <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
         <path d="M4 7h16M4 12h16M4 17h16"></path>
       </svg>
       <span>Menü</span>
+      <span
+        class="saved-updates-dot"
+        data-saved-updates
+        hidden
+        aria-hidden="true"
+      ></span>
     </button>
 
     <div class="site-menu" id="site-menu" data-site-menu>
@@ -72,6 +89,11 @@ function itemUrl(item: NavigationItem): string {
                   href={itemUrl(item)}
                   class="utility-link"
                   aria-current={isActive ? "page" : undefined}
+                  aria-describedby={
+                    item.section === "saved"
+                      ? "saved-search-updates"
+                      : undefined
+                  }
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -82,6 +104,14 @@ function itemUrl(item: NavigationItem): string {
                     <path d="M6 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18l-6-4-6 4V4Z" />
                   </svg>
                   <span>{item.label}</span>
+                  {item.section === "saved" && (
+                    <span
+                      class="saved-updates-dot"
+                      data-saved-updates
+                      hidden
+                      aria-hidden="true"
+                    ></span>
+                  )}
                 </a>
               </li>
             );
@@ -90,6 +120,7 @@ function itemUrl(item: NavigationItem): string {
       </nav>
     </div>
   </div>
+  <span id="saved-search-updates" class="visually-hidden"></span>
 </header>
 <div class="menu-overlay" data-menu-overlay hidden></div>
 
@@ -185,6 +216,14 @@ function itemUrl(item: NavigationItem): string {
   .utility-link {
     gap: 7px;
     font-size: 0.88rem;
+  }
+
+  .saved-updates-dot {
+    width: 7px;
+    height: 7px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: #a42622;
   }
 
   .utility-link svg {
@@ -321,6 +360,7 @@ function itemUrl(item: NavigationItem): string {
 </style>
 
 <script>
+  import { initSavedSearchUpdates } from "../shared/saved-search-updates";
   function initNavigation() {
     const header = document.querySelector<HTMLElement>("[data-site-header]");
     const button =
@@ -398,4 +438,5 @@ function itemUrl(item: NavigationItem): string {
   }
 
   initNavigation();
+  initSavedSearchUpdates();
 </script>

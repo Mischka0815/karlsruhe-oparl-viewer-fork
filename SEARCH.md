@@ -66,6 +66,13 @@ limit fragment fetching to potentially new/updated matches, then compares exact
 timestamps. Bulk-import modification timestamps never count as updates. The
 paper-date restriction and visible sort are applied independently.
 
+A small dot beside “Gespeichert” (also on the collapsed mobile menu) signals
+new or updated matches. The navigation checks only when saved searches exist,
+uses the same exact freshness timestamps, and stops after the first changed
+batch. Successful search views and saved-search removals refresh the indicator;
+storage events keep other open tabs in sync. Missing storage or an unavailable
+index leaves the indicator hidden.
+
 Committee filters and URLs use a short key built from the last two segments of
 the OParl organization ID (`gr-32130`, unique across the registry); older full
 IDs in a URL normalize to the same key.

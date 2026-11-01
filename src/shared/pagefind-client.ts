@@ -128,17 +128,45 @@ export async function getPagefindFreshnessStats(
 ): Promise<PagefindFreshnessStats> {
   const pagefind = await loadPagefindModule(baseUrl);
   const matches = await searchPapers(pagefind, state);
+  let newCount = 0,
+    updatedCount = 0;
+  for await (const change of recentPaperChanges(pagefind, state, since)) {
+    if (change === "new") newCount++;
+    else updatedCount++;
+  }
+  return { total: matches.length, newCount, updatedCount };
+}
+
+export async function hasPagefindUpdates(
+  pagefind: PagefindModule,
+  state: SearchState,
+  since: string,
+): Promise<boolean> {
+  for await (const _change of recentPaperChanges(pagefind, state, since)) {
+    return true;
+  }
+  return false;
+}
+
+async function* recentPaperChanges(
+  pagefind: PagefindModule,
+  state: SearchState,
+  since: string,
+): AsyncGenerator<"new" | "updated"> {
   const available = await pagefind.filters();
   const days = Object.keys(available.freshness ?? {}).filter(
     (day) => day >= since.slice(0, 10),
   );
   const recent = days.length
-    ? await searchPapers(pagefind, state, { freshness: { any: days } })
+    ? await searchPapers(
+        pagefind,
+        { ...state, sort: "modified" },
+        { freshness: { any: days } },
+      )
     : [];
   const cutoff = getDateTimestamp(since) ?? 0;
-  let newCount = 0,
-    updatedCount = 0;
-  // Freshness is evaluated only on the saved-search page, never while typing.
+  // Only potentially changed fragments are loaded; the navigation stops at
+  // the first confirmed change rather than counting every matching paper.
   for (let offset = 0; offset < recent.length; offset += 20) {
     const entries = await Promise.all(
       recent.slice(offset, offset + 20).map((result) => result.data?.()),
@@ -149,9 +177,8 @@ export async function getPagefindFreshnessStats(
       const modified = rawModified.startsWith(BULK_MODIFIED_DATE)
         ? undefined
         : getDateTimestamp(rawModified);
-      if (created !== undefined && created > cutoff) newCount++;
-      else if (modified !== undefined && modified > cutoff) updatedCount++;
+      if (created !== undefined && created > cutoff) yield "new";
+      else if (modified !== undefined && modified > cutoff) yield "updated";
     }
   }
-  return { total: matches.length, newCount, updatedCount };
 }
