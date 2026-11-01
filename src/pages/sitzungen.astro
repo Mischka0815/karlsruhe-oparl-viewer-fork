@@ -25,7 +25,7 @@ const archiveUrl = buildMeetingArchiveUrl(baseUrl);
   pagefindIgnore
   navigationSection="meetings"
 >
-  <PageContainer class="meetings-page">
+  <PageContainer width="medium">
     <h1 class="page-header">Sitzungen</h1>
     <MeetingViewTabs current="upcoming" />
     <div class="page-intro" data-pagefind-ignore>
@@ -43,12 +43,12 @@ const archiveUrl = buildMeetingArchiveUrl(baseUrl);
           meetings={meetings}
           filterValuesById={meetingFilterValuesById}
         />
-        <p class="no-results" data-meeting-no-results hidden>
+        <p class="empty-state" data-meeting-no-results hidden>
           Keine Sitzungen für die gewählten Filter gefunden.
         </p>
       </>
     ) : (
-      <p class="empty">
+      <p class="empty-state">
         Derzeit sind keine kommenden Sitzungen verfügbar —{" "}
         <a href={archiveUrl}>vergangene Sitzungen im Archiv</a>.
       </p>
@@ -57,10 +57,6 @@ const archiveUrl = buildMeetingArchiveUrl(baseUrl);
 </Layout>
 
 <style>
-  .meetings-page {
-    max-width: 1000px;
-  }
-
   .page-intro {
     display: flex;
     flex-wrap: wrap;
@@ -73,16 +69,5 @@ const archiveUrl = buildMeetingArchiveUrl(baseUrl);
 
   .page-intro p {
     margin: 0;
-  }
-
-  .empty {
-    text-align: center;
-    color: var(--color-text-muted);
-  }
-
-  .no-results {
-    margin: 24px 0;
-    color: var(--color-text-muted);
-    text-align: center;
   }
 </style>

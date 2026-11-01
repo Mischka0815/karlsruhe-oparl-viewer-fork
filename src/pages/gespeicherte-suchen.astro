@@ -27,7 +27,7 @@ const baseUrl = import.meta.env.BASE_URL;
   navigationSection="saved"
   noindex
 >
-  <PageContainer class="saved-searches-page">
+  <PageContainer width="search">
     <h1 class="page-header">Gespeicherte Suchen</h1>
     <p class="subtitle">
       Ihre gespeicherten Suchanfragen mit aktuellen Trefferzahlen.
@@ -75,10 +75,6 @@ const baseUrl = import.meta.env.BASE_URL;
 </Layout>
 
 <style>
-  .saved-searches-page {
-    max-width: 900px;
-  }
-
   .subtitle {
     margin: 0 auto 16px;
     text-align: center;
@@ -90,7 +86,6 @@ const baseUrl = import.meta.env.BASE_URL;
     background: #fff;
     border: 1px solid var(--color-border);
     border-radius: var(--radius);
-    box-shadow: var(--shadow-card);
     overflow: hidden;
   }
 
@@ -100,7 +95,7 @@ const baseUrl = import.meta.env.BASE_URL;
     margin: 0;
     padding: 10px 20px;
     border-bottom: 1px solid var(--color-border);
-    background: #f8f9fa;
+    background: var(--color-bg-card);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -118,7 +113,7 @@ const baseUrl = import.meta.env.BASE_URL;
     border: 1px solid var(--color-border);
     border-radius: var(--radius);
     background: #fff;
-    color: #8a1f11;
+    color: var(--color-danger);
     padding: 6px 10px;
     font-size: 0.82rem;
     font-weight: 600;
@@ -189,7 +184,7 @@ const baseUrl = import.meta.env.BASE_URL;
   }
 
   .saved-searches-panel .saved-search-link:hover {
-    background: #fafafa;
+    background: var(--color-bg-hover);
   }
 
   .saved-searches-panel .saved-search-query {
@@ -210,7 +205,7 @@ const baseUrl = import.meta.env.BASE_URL;
     font-weight: 600;
     color: var(--color-text-muted);
     border: 1px solid var(--color-border);
-    background: #f8f9fa;
+    background: var(--color-bg-card);
     border-radius: 999px;
     padding: 3px 10px;
     transition:
@@ -230,8 +225,8 @@ const baseUrl = import.meta.env.BASE_URL;
   }
 
   .saved-searches-panel .saved-search-freshness-badge[data-state="fresh"] {
-    background: #e8f5ec;
-    color: #176b3a;
+    background: var(--color-success-bg);
+    color: var(--color-success);
   }
 
   .saved-searches-panel .saved-search-freshness-badge[data-state="loading"] {
@@ -243,7 +238,7 @@ const baseUrl = import.meta.env.BASE_URL;
   }
 
   .saved-searches-panel .saved-search-freshness-badge[data-state="error"] {
-    color: #999;
+    color: var(--color-text-muted);
   }
 
   .saved-searches-panel .saved-search-count-badge[data-state="loading"] {
@@ -268,9 +263,9 @@ const baseUrl = import.meta.env.BASE_URL;
   }
 
   .saved-searches-panel .saved-search-count-badge[data-state="error"] {
-    color: #999;
+    color: var(--color-text-muted);
     border-color: var(--color-border);
-    background: #f8f9fa;
+    background: var(--color-bg-card);
   }
 
   .saved-searches-panel .saved-search-remove-button {
@@ -282,7 +277,7 @@ const baseUrl = import.meta.env.BASE_URL;
     border: none;
     border-left: 1px solid var(--color-border);
     background: transparent;
-    color: #aaa;
+    color: var(--color-text-muted);
     cursor: pointer;
     transition:
       color 0.2s,
@@ -291,13 +286,14 @@ const baseUrl = import.meta.env.BASE_URL;
   }
 
   .saved-searches-panel .saved-search-remove-button:hover {
-    color: #8a1f11;
+    color: var(--color-danger);
     background: #fff5f5;
   }
 
+  /* Inset: the panel clips overflow, so the global ring would be cut off. */
+  .saved-searches-panel .saved-search-link:focus-visible,
   .saved-searches-panel .saved-search-remove-button:focus-visible {
-    outline: 2px solid #b10000;
-    outline-offset: -2px;
+    outline-offset: -3px;
   }
 
   .saved-searches-panel .empty-icon {

@@ -154,11 +154,6 @@ for (const paper of relatedPapers) {
     transform: rotate(45deg);
   }
 
-  .paper-history summary:focus-visible {
-    outline: 3px solid #175f94;
-    outline-offset: 3px;
-  }
-
   .paper-history > details > summary .section-heading {
     margin: 0;
   }
@@ -402,13 +397,8 @@ for (const paper of relatedPapers) {
   }
 
   .paper-history button:hover {
-    background: var(--color-bg-card);
+    background: var(--color-bg-hover);
     border-color: #c4c4c4;
-  }
-
-  .paper-history button:focus-visible {
-    outline: 3px solid #175f94;
-    outline-offset: 2px;
   }
 
   /* Documents: one bordered list of disclosures, like the related papers. */
@@ -440,7 +430,7 @@ for (const paper of relatedPapers) {
   }
 
   .paper-history .history-document > summary:hover {
-    background: #fafafa;
+    background: var(--color-bg-hover);
   }
 
   .paper-history .history-document-name {

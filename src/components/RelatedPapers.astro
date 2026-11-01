@@ -76,10 +76,6 @@ const SimilarHeading = groups.length > 0 ? "h3" : "h2";
 )}
 
 <style is:global>
-  .related-papers .section-heading {
-    margin-top: 0;
-  }
-
   /* Sits in the detail sidebar, so it stacks by default and only spreads out
      where the column is genuinely wide. */
   .related-papers .related-groups {
@@ -119,7 +115,7 @@ const SimilarHeading = groups.length > 0 ? "h3" : "h2";
   }
 
   .related-papers a:hover {
-    background: #fafafa;
+    background: var(--color-bg-hover);
   }
 
   .related-papers small {
@@ -132,13 +128,34 @@ const SimilarHeading = groups.length > 0 ? "h3" : "h2";
     border-top: 1px solid var(--color-border);
   }
 
+  /* Same caret as the "Änderungshistorie" card, not the native marker. */
   .similar-papers summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     cursor: pointer;
+    list-style: none;
   }
 
-  .similar-papers summary:focus-visible {
-    outline: 3px solid #175f94;
-    outline-offset: 3px;
+  .similar-papers summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .similar-papers summary::before {
+    content: "";
+    flex-shrink: 0;
+    width: 7px;
+    height: 7px;
+    margin: -2px 0 0 2px;
+    border-right: 2px solid var(--color-text-muted);
+    border-bottom: 2px solid var(--color-text-muted);
+    transform: rotate(-45deg);
+    transition: transform 0.15s;
+  }
+
+  .similar-papers[open] summary::before {
+    margin-top: -4px;
+    transform: rotate(45deg);
   }
 
   .similar-papers summary :is(h2, h3) {

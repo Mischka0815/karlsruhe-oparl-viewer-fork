@@ -178,21 +178,6 @@ const structuredData = {
     column-gap: 24px;
   }
 
-  /* This page stacks five or six cards, so it feels padded out at the global
-     rhythm. Tightened here rather than in `Layout.astro`, where the list pages
-     show one or two cards and want the roomier default. */
-  .detail-layout :global(.section-card) {
-    margin-top: 14px;
-    padding: 16px 18px;
-  }
-
-  /* Direct children only — `PaperSummary` nests its heading in a flex row with
-     the "KI-generiert" badge and zeroes the margin itself. */
-  .detail-layout :global(.section-card > .section-heading) {
-    margin-bottom: 10px;
-    font-size: 1.35rem;
-  }
-
   @media (min-width: 60rem) {
     .detail-layout {
       grid-template-columns: minmax(0, 1fr) 21rem;

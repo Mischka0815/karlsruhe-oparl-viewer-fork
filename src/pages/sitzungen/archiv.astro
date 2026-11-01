@@ -41,7 +41,7 @@ const maximumYearCount = Math.max(
   pagefindIgnore
   navigationSection="meetings"
 >
-  <PageContainer class="archive-page">
+  <PageContainer width="medium">
     <h1 class="page-header">Sitzungen</h1>
     <MeetingViewTabs current="archive" />
     <div class="page-intro" data-pagefind-ignore>
@@ -99,10 +99,6 @@ const maximumYearCount = Math.max(
 </Layout>
 
 <style>
-  .archive-page {
-    max-width: 1000px;
-  }
-
   .page-intro {
     margin: 0 auto 20px;
     color: var(--color-text-muted);
@@ -135,15 +131,14 @@ const maximumYearCount = Math.max(
     background: #fff;
     color: var(--color-text);
     text-decoration: none;
+    transition:
+      border-color 0.15s,
+      box-shadow 0.15s;
   }
 
   .year-card:hover {
     border-color: var(--color-link);
-  }
-
-  .year-card:focus-visible {
-    outline: 2px solid var(--color-link);
-    outline-offset: 2px;
+    box-shadow: var(--shadow-card);
   }
 
   .year-label {

@@ -265,10 +265,6 @@ const { options } = await loadSearchIndex();
     border-radius: 6px;
     background: transparent;
   }
-  .search-panel :is(button, select, summary, input):focus-visible {
-    outline: 2px solid var(--color-link);
-    outline-offset: 3px;
-  }
   .search-panel .search-form {
     display: flex;
     align-items: center;
@@ -279,9 +275,10 @@ const { options } = await loadSearchIndex();
     background: #fff;
     box-shadow: 0 2px 5px #00000006;
   }
+  /* The field itself has no outline, so the whole box carries the focus. */
   .search-panel .search-form:focus-within {
-    border-color: var(--color-link);
-    box-shadow: 0 0 0 2px #0066cc12;
+    border-color: var(--color-focus);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-focus) 22%, #fff);
   }
   .search-panel .search-icon {
     flex-shrink: 0;
@@ -482,12 +479,12 @@ const { options } = await loadSearchIndex();
   }
   .search-panel .filter-error {
     margin: 6px 0 0;
-    color: #b10000;
+    color: var(--color-danger);
     font-size: 0.75rem;
     line-height: 1.4;
   }
   .search-panel .search-filter-fields input[aria-invalid="true"] {
-    border-color: #b10000;
+    border-color: var(--color-danger);
   }
   .search-panel .search-reset {
     min-height: 32px;
@@ -593,7 +590,7 @@ const { options } = await loadSearchIndex();
     margin: 0;
     padding: 0;
     border: 1px solid var(--color-border);
-    border-radius: 9px;
+    border-radius: var(--radius);
     background: #fff;
     overflow: hidden;
   }
@@ -619,7 +616,11 @@ const { options } = await loadSearchIndex();
     text-decoration: none;
   }
   .search-panel .search-result-link:hover {
-    background: #f8fafc;
+    background: var(--color-bg-hover);
+  }
+  /* Inset: the list clips overflow, so the global ring would be cut off. */
+  .search-panel .search-result-link:focus-visible {
+    outline-offset: -3px;
   }
   .search-panel .search-result-title {
     display: -webkit-box;
@@ -702,13 +703,20 @@ const { options } = await loadSearchIndex();
     font-size: 0.78rem;
     text-align: center;
   }
+  /* Same quiet secondary button as "Ältere Stände laden" in the history. */
   .search-panel .search-load-trigger {
     justify-self: center;
     min-height: 42px;
     padding: 10px 18px;
     border: 1px solid var(--color-border);
+    border-radius: var(--radius);
     background: #fff;
+    color: var(--color-link);
     font-size: 0.85rem;
+  }
+  .search-panel .search-load-trigger:hover:not(:disabled) {
+    border-color: #c4c4c4;
+    background: var(--color-bg-hover);
   }
   .search-panel .search-load-trigger:disabled {
     color: var(--color-text-muted);

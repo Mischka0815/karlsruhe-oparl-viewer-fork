@@ -33,7 +33,7 @@ const meetingSlot = formatMeetingSlot(
 );
 ---
 
-<header class="paper-header">
+<header class="detail-header">
   {/* Type and date are not shown here, but every search result card still
        reads them as Pagefind meta. They therefore use the literal `name:value`
        form on empty spans — the same trick `PaperFacts` uses for
@@ -48,7 +48,7 @@ const meetingSlot = formatMeetingSlot(
     data-pagefind-sort={pagefindSortAtt}
   ></span>
 
-  <h1 class="paper-title">{paper.name}</h1>
+  <h1 class="detail-title">{paper.name}</h1>
 
   {/* Status and its detail are one statement — "Entschieden" answers *what*
        and the rest answers *when and where* — so they share a single line
@@ -76,23 +76,6 @@ const meetingSlot = formatMeetingSlot(
 </header>
 
 <style>
-  .paper-header {
-    padding-bottom: 14px;
-    border-bottom: 3px solid var(--color-primary);
-  }
-
-  .paper-title {
-    /* Council paper titles are full sentences — left aligned and capped at a
-       readable measure, unlike the centred `.page-header` used elsewhere. The
-       cap is in `ch`, so it tracks the clamped font size across viewports. */
-    max-width: 62ch;
-    margin: 0;
-    font-size: clamp(1.5rem, 1.1rem + 1.5vw, 2.05rem);
-    font-weight: bold;
-    line-height: 1.2;
-    text-wrap: balance;
-  }
-
   /* One tinted line carrying the whole status statement. `fit-content` keeps
      the tint wrapped around the text instead of trailing off across the column
      — "Veröffentlicht" alone reads as a chip, a full decision as one line — and
@@ -146,13 +129,13 @@ const meetingSlot = formatMeetingSlot(
   }
 
   .tone-decided {
-    background: #e8f5ec;
-    color: #176b3a;
+    background: var(--color-success-bg);
+    color: var(--color-success);
   }
 
   .tone-scheduled {
-    background: #e6eefa;
-    color: #14508f;
+    background: var(--color-info-bg);
+    color: var(--color-info);
   }
 
   .tone-discussed,

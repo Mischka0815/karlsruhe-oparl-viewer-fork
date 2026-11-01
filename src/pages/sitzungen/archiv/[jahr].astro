@@ -53,7 +53,7 @@ const archiveUrl = buildMeetingArchiveUrl(baseUrl);
   pagefindIgnore
   navigationSection="meetings"
 >
-  <PageContainer class="archive-year-page">
+  <PageContainer width="medium">
     <Breadcrumbs
       items={[
         { label: "Sitzungen", href: `${baseUrl}sitzungen` },
@@ -90,17 +90,13 @@ const archiveUrl = buildMeetingArchiveUrl(baseUrl);
       filterValuesById={meetingFilterValuesById}
       variant="archive"
     />
-    <p class="no-results" data-meeting-no-results hidden>
+    <p class="empty-state" data-meeting-no-results hidden>
       Keine Sitzungen für die gewählten Filter gefunden.
     </p>
   </PageContainer>
 </Layout>
 
 <style>
-  .archive-year-page {
-    max-width: 1000px;
-  }
-
   .year-nav {
     display: flex;
     align-items: center;
@@ -117,11 +113,5 @@ const archiveUrl = buildMeetingArchiveUrl(baseUrl);
 
   .year-nav a:hover {
     text-decoration: underline;
-  }
-
-  .no-results {
-    margin: 24px 0;
-    color: var(--color-text-muted);
-    text-align: center;
   }
 </style>

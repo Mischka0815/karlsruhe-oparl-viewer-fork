@@ -99,6 +99,13 @@ const canonicalUrl = buildCanonicalUrl(Astro.url, Astro.site);
     --color-text-muted: #555;
     --color-border: #ddd;
     --color-bg-card: #f9f9f9;
+    --color-bg-hover: #fafafa;
+    --color-focus: #175f94;
+    --color-danger: #b10000;
+    --color-success: #176b3a;
+    --color-success-bg: #e8f5ec;
+    --color-info: #14508f;
+    --color-info-bg: #e6eefa;
     --shadow-card: 0 4px 6px rgba(0, 0, 0, 0.1);
     --radius: 8px;
     --font-family: Arial, sans-serif;
@@ -116,13 +123,24 @@ const canonicalUrl = buildCanonicalUrl(Astro.url, Astro.site);
     padding: 0;
     color: var(--color-text);
     background: #fff;
+    font-family: var(--font-family);
   }
 
+  button,
+  input,
+  select,
+  textarea {
+    font-family: inherit;
+  }
+
+  /* The one focus ring for the whole site — components do not restyle it. */
   a:focus-visible,
   button:focus-visible,
   input:focus-visible,
-  select:focus-visible {
-    outline: 3px solid #175f94;
+  select:focus-visible,
+  summary:focus-visible,
+  textarea:focus-visible {
+    outline: 3px solid var(--color-focus);
     outline-offset: 3px;
   }
 
@@ -171,19 +189,50 @@ const canonicalUrl = buildCanonicalUrl(Astro.url, Astro.site);
     overflow-wrap: break-word;
   }
 
+  /* Cards stack five or six deep on the detail pages — the only place they
+     are used — so the rhythm is kept tight. */
   .section-card {
-    margin-top: 20px;
-    padding: 20px;
+    margin-top: 14px;
+    padding: 16px 18px;
     background: #fff;
     border: 1px solid var(--color-border);
     border-radius: var(--radius);
   }
 
   .section-heading {
-    font-size: 1.5rem;
-    margin-bottom: 15px;
+    margin: 0 0 10px;
+    font-size: 1.35rem;
     font-weight: bold;
     color: var(--color-text);
+  }
+
+  /* Title block shared by the paper and meeting detail pages: left aligned,
+     capped at a readable measure, closed by the brand rule. Unlike the
+     centred `.page-header`, these titles are often full sentences. */
+  .detail-header {
+    padding-bottom: 14px;
+    border-bottom: 3px solid var(--color-primary);
+  }
+
+  .detail-title {
+    max-width: 62ch;
+    margin: 0;
+    font-size: clamp(1.5rem, 1.1rem + 1.5vw, 2.05rem);
+    font-weight: bold;
+    line-height: 1.2;
+    text-wrap: balance;
+  }
+
+  /* "Nothing here" lines: no results, nothing published, search unavailable. */
+  .empty-state {
+    margin: 24px 0;
+    padding: 14px 16px;
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius);
+    color: var(--color-text-muted);
+    font-size: 0.92rem;
+    line-height: 1.5;
+    text-align: center;
   }
 </style>
 

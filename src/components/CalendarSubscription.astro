@@ -105,12 +105,12 @@ const googleUrl = `https://calendar.google.com/calendar/r?cid=${encodeURICompone
     align-items: center;
     gap: 7px;
     width: fit-content;
-    padding: 7px 12px;
-    border: 1px solid var(--color-border);
+    padding: 8px 12px;
+    border: 1px solid var(--color-primary-hover);
     border-radius: var(--radius);
     background: var(--color-primary);
     color: var(--color-text);
-    font-size: 0.88rem;
+    font-size: 0.9rem;
     font-weight: 700;
     text-decoration: none;
   }
@@ -133,6 +133,9 @@ const googleUrl = `https://calendar.google.com/calendar/r?cid=${encodeURICompone
   }
 
   .calendar-more summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
     color: var(--color-link);
     font-size: 0.86rem;
     cursor: pointer;
@@ -145,9 +148,20 @@ const googleUrl = `https://calendar.google.com/calendar/r?cid=${encodeURICompone
     display: none;
   }
 
-  .calendar-more summary:focus-visible {
-    outline: 2px solid var(--color-link);
-    outline-offset: 2px;
+  /* It opens a panel below, so the same down caret as the "Filter" toggles. */
+  .calendar-more summary::after {
+    content: "";
+    width: 6px;
+    height: 6px;
+    margin-top: -3px;
+    border-right: 1.5px solid;
+    border-bottom: 1.5px solid;
+    transform: rotate(45deg);
+  }
+
+  .calendar-more[open] summary::after {
+    margin-top: 3px;
+    transform: rotate(-135deg);
   }
 
   .calendar-more-panel {
@@ -226,6 +240,6 @@ const googleUrl = `https://calendar.google.com/calendar/r?cid=${encodeURICompone
   }
 
   .calendar-url button:hover {
-    background: #fafafa;
+    background: var(--color-bg-hover);
   }
 </style>

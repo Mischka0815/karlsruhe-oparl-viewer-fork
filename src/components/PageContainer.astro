@@ -2,10 +2,14 @@
 interface Props {
   class?: string;
   /**
-   * `narrow` keeps long-form pages at a readable measure; `search` is the
-   * single column of a search box above its result list.
+   * `narrow` keeps long-form pages at a readable measure; `medium` fits the
+   * meeting pages' date-led rows; `search` is a single column, such as a search
+   * box above its result list.
+   *
+   * Set the width here rather than with a `max-width` on a passed `class`: a
+   * page's scoped styles never reach this component's element.
    */
-  width?: "wide" | "narrow" | "search";
+  width?: "wide" | "narrow" | "medium" | "search";
 }
 
 const { class: className, width = "wide" } = Astro.props;
@@ -26,6 +30,10 @@ const { class: className, width = "wide" } = Astro.props;
 
   .width-narrow {
     max-width: 1120px;
+  }
+
+  .width-medium {
+    max-width: 1000px;
   }
 
   .width-search {

@@ -91,7 +91,7 @@ const structuredData = siteUrl
     {pagefind.enabled ? (
       <SearchPanel />
     ) : (
-      <p class="search-disabled" role="status">
+      <p class="empty-state" role="status">
         {pagefind.disabledMessage}
       </p>
     )}
@@ -109,11 +109,6 @@ const structuredData = siteUrl
   .next-meeting:hover time {
     text-decoration: underline;
     text-underline-offset: 3px;
-  }
-  .next-meeting:focus-visible {
-    outline: 2px solid var(--color-link);
-    outline-offset: 3px;
-    border-radius: 2px;
   }
   .meeting-label {
     color: var(--color-text-muted);
@@ -155,16 +150,5 @@ const structuredData = siteUrl
     font-size: 0.9rem;
     line-height: 1.45;
     text-wrap: balance;
-  }
-
-  .search-disabled {
-    margin: 16px auto 0;
-    max-width: 760px;
-    padding: 10px 12px;
-    border: 1px dashed var(--color-border);
-    border-radius: var(--radius);
-    color: var(--color-text-muted);
-    text-align: center;
-    font-size: 0.92rem;
   }
 </style>

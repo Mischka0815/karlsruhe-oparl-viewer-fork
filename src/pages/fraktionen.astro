@@ -60,19 +60,21 @@ const baseUrl = import.meta.env.BASE_URL;
     text-decoration: none;
     color: inherit;
     transition:
-      box-shadow 0.2s,
-      transform 0.2s;
+      border-color 0.15s,
+      box-shadow 0.15s;
   }
 
+  /* Link cards share one look across the site: blue name, border and lift
+     on hover (see the archive's year cards). */
   .submitter-card:hover {
+    border-color: var(--color-link);
     box-shadow: var(--shadow-card);
-    transform: translateY(-2px);
   }
 
   .submitter-name {
     font-size: 1.1rem;
     font-weight: 600;
-    color: var(--color-text);
+    color: var(--color-link);
   }
 
   .submitter-count {

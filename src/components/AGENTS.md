@@ -4,31 +4,31 @@ Reusable UI components. Prefer extending existing components over creating new o
 
 ## Component Catalog
 
-| Component                    | Role                                                              |
-| ---------------------------- | ----------------------------------------------------------------- |
-| `SiteNavigation.astro`       | Top nav — desktop/mobile + overlay                                |
-| `SiteFooter.astro`           | Site context and external data/source links                       |
-| `SiteHint.astro`             | Dismissible corner hint, text rotates from `shared/site-hints.ts` |
-| `Breadcrumbs.astro`          | Canonical hierarchy on detail and scoped list pages               |
-| `PageContainer.astro`        | Shared max-width wrapper (`width="wide" \| "narrow"`)             |
-| `PaperListPage.astro`        | Reusable list-page skeleton (title + intro slot + list)           |
-| `FilterSelect.astro`         | Reusable dropdown for a single filter; optional described `hint`  |
-| `MeetingFilters.astro`       | Meeting-specific filter controls and status (`variant` aware)     |
-| `MeetingList.astro`          | Month-grouped meeting rows for the upcoming list and the archive  |
-| `MeetingViewTabs.astro`      | Switches between upcoming meetings and the archive                |
-| `MeetingActions.astro`       | Single-event calendar download and committee feed links           |
-| `SearchPanel.astro`          | Pagefind search box + rich result cards (custom UI)               |
-| `FeedSubscriptionLink.astro` | Shared link to an external update feed                            |
-| `LegacyRedirectPage.astro`   | Noindex redirect shell for legacy routes                          |
-| `PaperHeader.astro`          | Detail-page title block: reference, type, date, title, status bar |
-| `PaperFacts.astro`           | "Eckdaten" sidebar card — modified, bodies, submitters, districts |
-| `PaperSummary.astro`         | LLM summary + key points, one per full-width row; only if present |
-| `AuxiliaryFiles.astro`       | File attachments — detail page                                    |
-| `StadtteilHint.astro`        | One-line, expandable classifier caveat — district pages           |
-| `MeetingDigest.astro`        | Generated sitting preview — shell only, filled at runtime         |
-| `MeetingAgenda.astro`        | Public agenda with links to matching papers                       |
-| `PaperTimeline.astro`        | Paper lifecycle, consultations, and decisions                     |
-| `RelatedPapers.astro`        | Procedural links + collapsed topical recommendations              |
+| Component                    | Role                                                                |
+| ---------------------------- | ------------------------------------------------------------------- |
+| `SiteNavigation.astro`       | Top nav — desktop/mobile + overlay                                  |
+| `SiteFooter.astro`           | Site context and external data/source links                         |
+| `SiteHint.astro`             | Dismissible corner hint, text rotates from `shared/site-hints.ts`   |
+| `Breadcrumbs.astro`          | Canonical hierarchy on detail and scoped list pages                 |
+| `PageContainer.astro`        | Shared max-width wrapper (`width`: wide · narrow · medium · search) |
+| `PaperListPage.astro`        | Reusable list-page skeleton (title + intro slot + list)             |
+| `FilterSelect.astro`         | Reusable dropdown for a single filter; optional described `hint`    |
+| `MeetingFilters.astro`       | Meeting-specific filter controls and status (`variant` aware)       |
+| `MeetingList.astro`          | Month-grouped meeting rows for the upcoming list and the archive    |
+| `MeetingViewTabs.astro`      | Switches between upcoming meetings and the archive                  |
+| `MeetingActions.astro`       | Single-event calendar download and committee feed links             |
+| `SearchPanel.astro`          | Pagefind search box + rich result cards (custom UI)                 |
+| `FeedSubscriptionLink.astro` | Shared link to an external update feed                              |
+| `LegacyRedirectPage.astro`   | Noindex redirect shell for legacy routes                            |
+| `PaperHeader.astro`          | Detail-page title block: reference, type, date, title, status bar   |
+| `PaperFacts.astro`           | "Eckdaten" sidebar card — modified, bodies, submitters, districts   |
+| `PaperSummary.astro`         | LLM summary + key points, one per full-width row; only if present   |
+| `AuxiliaryFiles.astro`       | File attachments — detail page                                      |
+| `StadtteilHint.astro`        | One-line, expandable classifier caveat — district pages             |
+| `MeetingDigest.astro`        | Generated sitting preview — shell only, filled at runtime           |
+| `MeetingAgenda.astro`        | Public agenda with links to matching papers                         |
+| `PaperTimeline.astro`        | Paper lifecycle, consultations, and decisions                       |
+| `RelatedPapers.astro`        | Procedural links + collapsed topical recommendations                |
 
 ## Reuse Rules
 
