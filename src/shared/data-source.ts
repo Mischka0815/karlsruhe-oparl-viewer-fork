@@ -120,6 +120,17 @@ async function loadArray<T>(entity: string): Promise<T[]> {
   return shards;
 }
 
+/**
+ * Like `loadArray`, but `[]` when neither layout exists — for stores the mirror
+ * started publishing after older checkouts were made.
+ */
+async function loadOptionalArray<T>(entity: string): Promise<T[]> {
+  const singleFile = resolve(DATA_ROOT, `${entity}${JSON_SUFFIX}`);
+  const contents = await readOptionalFile(singleFile);
+  if (contents !== undefined) return parseArray<T>(contents, singleFile);
+  return loadDirectory<T>(entity);
+}
+
 /** A required store published as a single JSON object keyed by entity id. */
 async function loadRecord<T>(
   name: string,
@@ -145,6 +156,7 @@ async function loadText(fileId: string): Promise<string | undefined> {
 
 export const dataSource = {
   loadArray,
+  loadOptionalArray,
   loadDirectory,
   loadRecord,
   loadOptionalObject,

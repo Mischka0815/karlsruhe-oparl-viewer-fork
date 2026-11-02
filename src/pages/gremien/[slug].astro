@@ -1,0 +1,239 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import PageContainer from "../../components/PageContainer.astro";
+import Breadcrumbs from "../../components/Breadcrumbs.astro";
+import {
+  getBodyMeetings,
+  getCouncilBodies,
+  loadFactionMembers,
+  resolveBodyMembers,
+  type CouncilBody,
+} from "../../shared/data";
+import { formatMeetingDate, groupMembersByRole } from "../../shared/bodies";
+import { findFactionMember, getBerlinCalendarDate } from "../../shared/people";
+import {
+  formatMeetingDayAndTime,
+  formatMeetingName,
+} from "../../shared/meeting-presentation";
+import { buildMeetingDetailUrl, getOParlEntityId } from "../../shared/utils";
+
+const MEETINGS_SHOWN = 5;
+
+export async function getStaticPaths() {
+  // The Gemeinderat has its own page with seats and factions. Astro runs this
+  // function in isolation, so the set cannot live at module level.
+  const OWN_PAGE_SLUGS = new Set(["gemeinderat"]);
+  const bodies = await getCouncilBodies();
+  return bodies
+    .filter((body) => !OWN_PAGE_SLUGS.has(body.slug))
+    .map((body) => ({ params: { slug: body.slug }, props: { body } }));
+}
+
+const { body } = Astro.props as { body: CouncilBody };
+const { organization } = body;
+const baseUrl = import.meta.env.BASE_URL;
+const day = getBerlinCalendarDate();
+
+const [members, factionIndex, upcoming, past] = await Promise.all([
+  resolveBodyMembers(organization.id, day),
+  loadFactionMembers(),
+  getBodyMeetings(organization.id, "upcoming", MEETINGS_SHOWN),
+  getBodyMeetings(organization.id, "past", MEETINGS_SHOWN),
+]);
+const roleGroups = groupMembersByRole(members);
+
+// Council members carry their faction; everyone else (citizens, Ortschaft
+// councillors) is listed without one rather than guessed.
+function factionLabel(personId: string): string | undefined {
+  const entry = findFactionMember(factionIndex, personId, day);
+  return entry?.faction
+    ? factionIndex.factions[entry.faction]?.name
+    : undefined;
+}
+
+const meetingsUrl = `${baseUrl}sitzungen?gremium=${encodeURIComponent(organization.name)}`;
+---
+
+<Layout
+  title={organization.name}
+  description={`${organization.name} der Stadt Karlsruhe: ${members.length > 0 ? `${members.length} Mitglieder, ` : ""}${body.meetings.count} Sitzungen, nächste und letzte Termine.`}
+  pagefindIgnore
+  navigationSection="bodies"
+>
+  <PageContainer class="body-page">
+    <Breadcrumbs
+      items={[
+        { label: "Gremien", href: `${baseUrl}gremien` },
+        { label: organization.name },
+      ]}
+    />
+    <h1 class="page-header">{organization.name}</h1>
+    <p class="subtitle">
+      {body.group}
+      {organization.shortName && ` · ${organization.shortName}`} ·{" "}
+      {body.meetings.count}
+      {body.meetings.count === 1 ? " Sitzung" : " Sitzungen"} im Archiv
+    </p>
+
+    <section class="body-section" aria-labelledby="sitzungen">
+      <h2 id="sitzungen">Sitzungen</h2>
+      <div class="meeting-columns">
+        {[
+          { label: "Nächste Sitzungen", meetings: upcoming },
+          { label: "Letzte Sitzungen", meetings: past },
+        ].map((column) => (
+          <div>
+            <h3>{column.label}</h3>
+            {column.meetings.length > 0 ? (
+              <ul class="body-meetings">
+                {column.meetings.map((meeting) => {
+                  const { time } = formatMeetingDayAndTime(meeting.start);
+                  return (
+                    <li>
+                      <a
+                        href={buildMeetingDetailUrl(
+                          baseUrl,
+                          getOParlEntityId(meeting.id),
+                        )}
+                      >
+                        {formatMeetingDate(meeting.start)}
+                        {time && `, ${time} Uhr`}
+                      </a>
+                      <span class="muted">
+                        {formatMeetingName(meeting.name)}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p class="muted">Keine Sitzungen bekannt.</p>
+            )}
+          </div>
+        ))}
+      </div>
+      {upcoming.length > 0 && (
+        <p class="more-link">
+          <a href={meetingsUrl}>Alle kommenden Sitzungen dieses Gremiums</a>
+        </p>
+      )}
+    </section>
+
+    <section class="body-section" aria-labelledby="mitglieder">
+      <h2 id="mitglieder">Mitglieder</h2>
+      {roleGroups.length > 0 ? (
+        roleGroups.map((group) => (
+          <div class="role-group">
+            <h3>
+              {group.role}
+              <span class="muted">{group.members.length}</span>
+            </h3>
+            <ul class="member-list">
+              {group.members.map(({ person }) => {
+                const faction = factionLabel(person.id);
+                return (
+                  <li>
+                    <span class="member-name">{person.name}</span>
+                    {faction && <span class="muted">{faction}</span>}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))
+      ) : (
+        <p class="muted">
+          Für dieses Gremium liegen noch keine Mitgliederdaten vor.
+        </p>
+      )}
+    </section>
+  </PageContainer>
+</Layout>
+
+<style>
+  .subtitle {
+    text-align: center;
+    color: var(--color-text-muted);
+    margin-bottom: 24px;
+  }
+
+  .body-section {
+    background: #fff;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin-bottom: 20px;
+  }
+
+  .body-section h2 {
+    margin: 0 0 14px;
+    font-size: 1.25rem;
+    color: var(--color-primary);
+  }
+
+  .body-section h3 {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin: 0 0 8px;
+    font-size: 1.05rem;
+  }
+
+  .muted {
+    font-size: 0.85rem;
+    font-weight: 400;
+    color: var(--color-text-muted);
+  }
+
+  .meeting-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .body-meetings {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .body-meetings li,
+  .member-list li {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .more-link {
+    margin: 14px 0 0;
+  }
+
+  .role-group + .role-group {
+    margin-top: 18px;
+  }
+
+  .member-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 6px 20px;
+  }
+
+  .member-name {
+    font-weight: 500;
+  }
+
+  @media screen and (max-width: 768px) {
+    .body-section {
+      padding: 16px;
+    }
+
+    .meeting-columns {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

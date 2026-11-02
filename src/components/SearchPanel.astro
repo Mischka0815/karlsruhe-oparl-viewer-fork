@@ -310,6 +310,7 @@ const { options } = await loadSearchIndex();
     min-height: 38px;
     padding: 8px 15px;
     background: var(--color-primary);
+    color: var(--color-on-primary);
     font-size: 0.9rem;
     font-weight: 600;
   }
@@ -694,7 +695,7 @@ const { options } = await loadSearchIndex();
     vertical-align: 1px;
   }
   .search-panel .search-result-excerpt mark {
-    background: #fff0b5;
+    background: var(--color-highlight);
     color: inherit;
   }
   .search-panel .search-progress {

@@ -2,6 +2,12 @@ export type { AgendaItem } from "./agenda-item.ts";
 export type { AuxiliaryFile } from "./auxiliary-file.ts";
 export type { Consultation } from "./consultation.ts";
 export type { Entity } from "./entity.ts";
+export type {
+  FactionDefinition,
+  FactionMember,
+  FactionMemberIndex,
+  FactionSeatCount,
+} from "./faction-members.ts";
 export type { FileContent } from "./file-content.ts";
 export type { Location } from "./location.ts";
 export type { Meeting } from "./meeting.ts";
@@ -19,6 +25,7 @@ export type {
   PaperDistrictIndex,
 } from "./paper-districts.ts";
 export type { PaperSummary } from "./paper-summary.ts";
+export type { Membership, Person, ResolvedMembership } from "./person.ts";
 export type { PaperSimilarityIndex } from "./paper-similarity.ts";
 export type {
   PaperSubmitter,

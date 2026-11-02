@@ -10,13 +10,32 @@ import {
   getEffectiveMeetingEnd,
   getOParlEntityId,
   normalizeStringList,
+  slugify,
 } from "./utils";
+import {
+  getBodyGroup,
+  isCouncilBody,
+  summarizeBodyMeetings,
+  type BodyGroup,
+  type BodyMeetingSummary,
+} from "./bodies";
 import { MEETING_DIGEST_LEADS } from "./meeting-digest";
 import { buildMeetingFilterModel } from "./meeting-filters";
 import { parseOrtschaftName } from "./meeting-presentation";
 import { selectSimilarPapers } from "./paper-similarity";
+import {
+  countSeatsByFaction,
+  findFactionMember,
+  getBerlinCalendarDate,
+  selectBodyMembers,
+} from "./people";
+import factionMemberIndex from "../data/faction-members.json";
 import type {
+  FactionMember,
+  FactionMemberIndex,
+  FactionSeatCount,
   FileContent,
+  Membership,
   Meeting,
   MeetingDigest,
   MeetingDigestLead,
@@ -28,6 +47,8 @@ import type {
   PaperSimilarityIndex,
   PaperSubmitter,
   PaperSubmitterIndex,
+  Person,
+  ResolvedMembership,
   ResolvedPaperSubmitter,
   ResolvedAgendaItem,
   ResolvedConsultation,
@@ -36,6 +57,7 @@ import type {
 } from "./types";
 
 const PAPER_SUBMITTER_INDEX_VERSION = 3;
+const FACTION_MEMBER_INDEX_VERSION = 1;
 
 const SUBMITTER_NAME_OVERRIDES: Record<string, string> = {
   afd: "-",
@@ -387,6 +409,136 @@ export const getPaperCountsByDistrict = memoizeAsync(
     return buildPaperCountsByDistrict(papers);
   },
 );
+
+// --- Council bodies ---
+
+export interface CouncilBody {
+  organization: Organization;
+  /** `/gremien/[slug]`; slugs are unique across the 28 current bodies. */
+  slug: string;
+  group: BodyGroup;
+  meetings: BodyMeetingSummary;
+}
+
+/** Every body (`organizations/gr/…`) with its meeting summary, by name. */
+export const getCouncilBodies = memoizeAsync(
+  async (): Promise<CouncilBody[]> => {
+    const [organizationsById, meetings] = await Promise.all([
+      loadOrganizations(),
+      getMeetings(),
+    ]);
+    const now = new Date();
+    const isPast = (meeting: Meeting) =>
+      getEffectiveMeetingEnd(meeting.start, meeting.end) < now;
+
+    const meetingsByOrganization = new Map<string, Meeting[]>();
+    for (const meeting of meetings) {
+      for (const organizationId of meeting.organization ?? []) {
+        const list = meetingsByOrganization.get(organizationId) ?? [];
+        list.push(meeting);
+        meetingsByOrganization.set(organizationId, list);
+      }
+    }
+
+    const bodies = [...organizationsById.values()]
+      .filter(isCouncilBody)
+      .map((organization) => ({
+        organization,
+        slug: slugify(organization.name),
+        group: getBodyGroup(organization.name),
+        meetings: summarizeBodyMeetings(
+          meetingsByOrganization.get(organization.id) ?? [],
+          isPast,
+        ),
+      }))
+      .sort((left, right) =>
+        left.organization.name.localeCompare(right.organization.name, "de"),
+      );
+
+    const slugs = new Set<string>();
+    for (const body of bodies) {
+      if (slugs.has(body.slug)) {
+        throw new Error(`Duplicate body slug: ${body.slug}`);
+      }
+      slugs.add(body.slug);
+    }
+    return bodies;
+  },
+);
+
+/** Upcoming or past meetings of one body, nearest first. */
+export async function getBodyMeetings(
+  organizationId: string,
+  when: "upcoming" | "past",
+  limit: number,
+): Promise<Meeting[]> {
+  const meetings =
+    when === "upcoming" ? await getUpcomingMeetings() : await getPastMeetings();
+  return meetings
+    .filter((meeting) => (meeting.organization ?? []).includes(organizationId))
+    .slice(0, limit);
+}
+
+// --- People, memberships, factions ---
+
+/**
+ * Public people from the optional `people` store. Older checkouts have none,
+ * which leaves every people-dependent view empty rather than failing.
+ */
+export const loadPeople = memoizeAsync(
+  async (): Promise<Map<string, Person>> => {
+    const people = await dataSource.loadOptionalArray<Person>("people");
+    return new Map(
+      people
+        .filter((person) => !person.deleted)
+        .map((person) => [person.id, person]),
+    );
+  },
+);
+
+export const loadMemberships = memoizeAsync(async (): Promise<Membership[]> => {
+  const memberships =
+    await dataSource.loadOptionalArray<Membership>("memberships");
+  return memberships.filter((membership) => !membership.deleted);
+});
+
+/** The curated faction mapping is shipped with the viewer, not the mirror. */
+export const loadFactionMembers = memoizeAsync(
+  async (): Promise<FactionMemberIndex> => {
+    const index = factionMemberIndex as FactionMemberIndex;
+    if (index.version !== FACTION_MEMBER_INDEX_VERSION) {
+      throw new Error(
+        `Unsupported faction member index version: ${String(index.version)} (expected ${FACTION_MEMBER_INDEX_VERSION})`,
+      );
+    }
+    return index;
+  },
+);
+
+/** Mandate holders of one body on `day` (default: today in Karlsruhe). */
+export async function resolveBodyMembers(
+  organizationId: string,
+  day: string = getBerlinCalendarDate(),
+): Promise<ResolvedMembership[]> {
+  const [memberships, peopleById] = await Promise.all([
+    loadMemberships(),
+    loadPeople(),
+  ]);
+  return selectBodyMembers(memberships, organizationId, peopleById, day);
+}
+
+export async function getCouncilSeatsByFaction(
+  day: string = getBerlinCalendarDate(),
+): Promise<FactionSeatCount[]> {
+  return countSeatsByFaction(await loadFactionMembers(), day);
+}
+
+export async function resolvePersonFaction(
+  person: Person,
+  day: string = getBerlinCalendarDate(),
+): Promise<FactionMember | undefined> {
+  return findFactionMember(await loadFactionMembers(), person.id, day);
+}
 
 // --- Per-paper resolvers ---
 

@@ -1,0 +1,447 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import PageContainer from "../../components/PageContainer.astro";
+import Breadcrumbs from "../../components/Breadcrumbs.astro";
+import {
+  getAvailablePaperSubmitters,
+  getPastMeetings,
+  getUpcomingMeetings,
+  loadFactionMembers,
+} from "../../shared/data";
+import {
+  getBerlinCalendarDate,
+  groupMembersByFaction,
+  selectCurrentFactionMembers,
+  selectFormerMembers,
+} from "../../shared/people";
+import {
+  formatMeetingDayAndTime,
+  formatMeetingName,
+} from "../../shared/meeting-presentation";
+import {
+  buildFactionUrl,
+  buildMeetingDetailUrl,
+  getOParlEntityId,
+} from "../../shared/utils";
+import { formatMeetingDate } from "../../shared/bodies";
+import type { Meeting } from "../../shared/types";
+
+const MEETINGS_SHOWN = 3;
+
+const baseUrl = import.meta.env.BASE_URL;
+const day = getBerlinCalendarDate();
+const index = await loadFactionMembers();
+const groups = groupMembersByFaction(index, day);
+const chair = selectCurrentFactionMembers(index, day).filter(
+  (member) => member.role === "Vorsitz",
+);
+const formerMembers = selectFormerMembers(index, day);
+const totalSeats = groups.reduce((sum, group) => sum + group.seats, 0);
+const largestGroup = Math.max(...groups.map((group) => group.seats), 1);
+
+// Only factions whose submitter key has a /fraktion page get a link there.
+const submitterPages = new Map(
+  (await getAvailablePaperSubmitters()).map((submitter) => [
+    submitter.id,
+    submitter.name,
+  ]),
+);
+function submitterLinks(factionId: string) {
+  return (index.factions[factionId]?.submitterIds ?? []).flatMap((id) => {
+    const name = submitterPages.get(id);
+    return name ? [{ href: buildFactionUrl(baseUrl, id), name }] : [];
+  });
+}
+
+const isCouncilMeeting = (meeting: Meeting) =>
+  (meeting.organization ?? []).includes(index.organization);
+const upcoming = (await getUpcomingMeetings())
+  .filter(isCouncilMeeting)
+  .slice(0, MEETINGS_SHOWN);
+const past = (await getPastMeetings())
+  .filter(isCouncilMeeting)
+  .slice(0, MEETINGS_SHOWN);
+
+const dateFormatter = new Intl.DateTimeFormat("de-DE", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  timeZone: "Europe/Berlin",
+});
+const formatDay = (isoDay: string) =>
+  dateFormatter.format(new Date(`${isoDay}T12:00:00Z`));
+---
+
+<Layout
+  title="Gemeinderat"
+  description={`Zusammensetzung des Karlsruher Gemeinderats: ${totalSeats} Sitze nach Fraktionen, alle Mitglieder der Wahlperiode ${index.legislativeTerm} und die nächsten Sitzungen.`}
+  pagefindIgnore
+  navigationSection="bodies"
+>
+  <PageContainer class="council-page">
+    <Breadcrumbs
+      items={[
+        { label: "Gremien", href: `${baseUrl}gremien` },
+        { label: "Gemeinderat" },
+      ]}
+    />
+    <h1 class="page-header">Gemeinderat</h1>
+    <p class="subtitle">
+      {totalSeats} Sitze und der Oberbürgermeister als Vorsitzender ·
+      Wahlperiode {index.legislativeTerm.replace("-", "–")}
+    </p>
+
+    <section class="council-section" aria-labelledby="sitzverteilung">
+      <h2 id="sitzverteilung">Sitzverteilung</h2>
+      <table class="seat-table">
+        <caption class="visually-hidden">
+          Sitze je Fraktion im Gemeinderat
+        </caption>
+        <thead class="visually-hidden">
+          <tr>
+            <th scope="col">Fraktion</th>
+            <th scope="col">Sitze</th>
+            <th scope="col">Anteil</th>
+          </tr>
+        </thead>
+        <tbody>
+          {groups.map((group) => {
+            const share = Math.round((group.seats / totalSeats) * 100);
+            return (
+              <tr
+                title={`${group.name}: ${group.seats} von ${totalSeats} Sitzen (${share} %)`}
+              >
+                <th scope="row" class="seat-name">
+                  <a href={`#fraktion-${group.factionId}`}>{group.name}</a>
+                </th>
+                <td class="seat-count">{group.seats}</td>
+                <td class="seat-bar-cell">
+                  <span
+                    class="seat-bar"
+                    style={`--seat-share: ${(group.seats / largestGroup) * 100}%`}
+                  />
+                  <span class="seat-share">{share} %</span>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="council-section" aria-labelledby="mitglieder">
+      <h2 id="mitglieder">Mitglieder</h2>
+      {chair.length > 0 && (
+        <div class="member-group">
+          <h3>Vorsitz</h3>
+          <ul class="member-list">
+            {chair.map((member) => (
+              <li>
+                <span class="member-name">{member.name}</span>
+                <span class="member-meta">Oberbürgermeister</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {groups.map((group) => {
+        const links = submitterLinks(group.factionId);
+        return (
+          <div class="member-group" id={`fraktion-${group.factionId}`}>
+            <h3>
+              {group.name}
+              <span class="member-group-count">
+                {group.seats} {group.seats === 1 ? "Sitz" : "Sitze"}
+              </span>
+            </h3>
+            <ul class="member-list">
+              {group.members.map((member) => (
+                <li>
+                  <span class="member-name">{member.name}</span>
+                  <span class="member-meta">
+                    im Gemeinderat seit {formatDay(member.councilSince)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            {links.length > 0 && (
+              <p class="member-group-links">
+                Eingereichte Vorlagen:{" "}
+                {links.map((link, position) => (
+                  <>
+                    {position > 0 && " · "}
+                    <a href={link.href}>{link.name}</a>
+                  </>
+                ))}
+              </p>
+            )}
+          </div>
+        );
+      })}
+
+      {formerMembers.length > 0 && (
+        <details class="former-members">
+          <summary>
+            Ausgeschieden in dieser Wahlperiode ({formerMembers.length})
+          </summary>
+          <ul class="member-list">
+            {formerMembers.map((member) => (
+              <li>
+                <span class="member-name">{member.name}</span>
+                <span class="member-meta">
+                  {member.faction
+                    ? index.factions[member.faction]?.name
+                    : "ohne Angabe"}{" "}
+                  · bis {formatDay(member.councilUntil ?? "")}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </section>
+
+    <section class="council-section" aria-labelledby="sitzungen">
+      <h2 id="sitzungen">Sitzungen</h2>
+      <div class="meeting-columns">
+        {[
+          { label: "Nächste Sitzungen", meetings: upcoming },
+          { label: "Letzte Sitzungen", meetings: past },
+        ].map((column) => (
+          <div>
+            <h3>{column.label}</h3>
+            {column.meetings.length > 0 ? (
+              <ul class="council-meetings">
+                {column.meetings.map((meeting) => {
+                  const { time } = formatMeetingDayAndTime(meeting.start);
+                  return (
+                    <li>
+                      <a
+                        href={buildMeetingDetailUrl(
+                          baseUrl,
+                          getOParlEntityId(meeting.id),
+                        )}
+                      >
+                        {formatMeetingDate(meeting.start)}
+                        {time && `, ${time} Uhr`}
+                      </a>
+                      <span class="member-meta">
+                        {formatMeetingName(meeting.name)}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p class="member-meta">Keine Sitzungen bekannt.</p>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <p class="source-note">
+      Fraktionszuordnung aus dem{" "}
+      <a href={index.source.url}>Sitzungskalender der Stadt Karlsruhe</a>, Stand{" "}
+      {formatDay(index.source.retrieved)}. Die Daten beziehen sich auf die
+      Mitgliedschaft im Gemeinderat; Fraktionswechsel innerhalb der Wahlperiode
+      sind nicht erfasst.
+    </p>
+  </PageContainer>
+</Layout>
+
+<style>
+  .subtitle {
+    text-align: center;
+    color: var(--color-text-muted);
+    margin-bottom: 24px;
+  }
+
+  .council-section {
+    background: #fff;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin-bottom: 20px;
+  }
+
+  .council-section h2 {
+    margin: 0 0 14px;
+    font-size: 1.25rem;
+  }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .seat-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .seat-table tr + tr th,
+  .seat-table tr + tr td {
+    border-top: 1px solid #eee;
+  }
+
+  .seat-name,
+  .seat-count,
+  .seat-bar-cell {
+    padding: 6px 0;
+    vertical-align: middle;
+  }
+
+  .seat-name {
+    width: 9rem;
+    text-align: left;
+    font-weight: 600;
+  }
+
+  .seat-name a {
+    color: var(--color-text);
+    text-decoration: none;
+  }
+
+  .seat-name a:hover {
+    color: var(--color-link);
+    text-decoration: underline;
+  }
+
+  .seat-count {
+    width: 2.5rem;
+    padding-right: 12px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .seat-bar-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* One series, so one color: the bar shows magnitude, the name beside it
+     carries identity. Length is relative to the largest faction. */
+  .seat-bar {
+    display: block;
+    height: 12px;
+    width: var(--seat-share);
+    min-width: 4px;
+    background: var(--color-link);
+    border-radius: 0 4px 4px 0;
+  }
+
+  .seat-share {
+    white-space: nowrap;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .member-group + .member-group {
+    margin-top: 18px;
+  }
+
+  .member-group h3 {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin: 0 0 8px;
+    font-size: 1.05rem;
+  }
+
+  .member-group-count {
+    font-size: 0.85rem;
+    font-weight: 400;
+    color: var(--color-text-muted);
+  }
+
+  .member-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 6px 20px;
+  }
+
+  .member-list li {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .member-name {
+    font-weight: 500;
+  }
+
+  .member-meta {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+  }
+
+  .member-group-links {
+    margin: 8px 0 0;
+    font-size: 0.9rem;
+  }
+
+  .former-members {
+    margin-top: 20px;
+    border-top: 1px solid #eee;
+    padding-top: 12px;
+  }
+
+  .former-members summary {
+    cursor: pointer;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .meeting-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .meeting-columns h3 {
+    margin: 0 0 8px;
+    font-size: 1.05rem;
+  }
+
+  .council-meetings {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .council-meetings li {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .source-note {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+  }
+
+  @media screen and (max-width: 768px) {
+    .council-section {
+      padding: 16px;
+    }
+
+    .seat-name {
+      width: 6.5rem;
+    }
+
+    .meeting-columns {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

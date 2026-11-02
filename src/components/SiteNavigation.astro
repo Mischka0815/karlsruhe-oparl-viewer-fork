@@ -131,6 +131,7 @@ function itemUrl(item: NavigationItem): string {
     z-index: 1000;
     border-bottom: 1px solid rgba(0, 0, 0, 0.12);
     background: var(--color-primary);
+    color: var(--color-on-primary);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     font-family: var(--font-family);
   }
@@ -149,7 +150,7 @@ function itemUrl(item: NavigationItem): string {
     display: inline-flex;
     flex-direction: column;
     flex-shrink: 0;
-    color: #171717;
+    color: inherit;
     line-height: 1.05;
     text-decoration: none;
   }
@@ -191,7 +192,7 @@ function itemUrl(item: NavigationItem): string {
     min-height: 42px;
     padding: 0 13px;
     border-radius: 7px;
-    color: #171717;
+    color: inherit;
     font-size: 0.95rem;
     font-weight: 700;
     text-decoration: none;
@@ -201,12 +202,12 @@ function itemUrl(item: NavigationItem): string {
   }
 
   nav a:hover {
-    background: rgba(255, 255, 255, 0.48);
+    background: rgba(255, 255, 255, 0.14);
   }
 
   nav a[aria-current="page"] {
-    background: #171717;
-    color: #fff;
+    background: var(--color-on-primary);
+    color: var(--color-primary);
   }
 
   .utility-navigation ul {
@@ -256,10 +257,10 @@ function itemUrl(item: NavigationItem): string {
       gap: 7px;
       min-height: 42px;
       padding: 0 11px;
-      border: 1px solid rgba(0, 0, 0, 0.28);
+      border: 1px solid rgba(255, 255, 255, 0.4);
       border-radius: 7px;
       background: transparent;
-      color: #171717;
+      color: inherit;
       font: inherit;
       font-size: 0.9rem;
       font-weight: 750;
@@ -267,7 +268,7 @@ function itemUrl(item: NavigationItem): string {
     }
 
     .menu-button:hover {
-      background: rgba(255, 255, 255, 0.48);
+      background: rgba(255, 255, 255, 0.14);
     }
 
     .menu-button svg {
@@ -287,6 +288,7 @@ function itemUrl(item: NavigationItem): string {
       padding: 20px;
       overflow-y: auto;
       background: #fff;
+      color: var(--color-text);
       box-shadow: -8px 0 24px rgba(0, 0, 0, 0.16);
       transform: translateX(105%);
       transition: transform 0.22s ease;
@@ -322,7 +324,12 @@ function itemUrl(item: NavigationItem): string {
     }
 
     nav a:hover {
-      background: #f3f3f3;
+      background: var(--color-bg-card);
+    }
+
+    nav a[aria-current="page"] {
+      background: var(--color-primary);
+      color: var(--color-on-primary);
     }
 
     .utility-navigation {

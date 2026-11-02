@@ -1,0 +1,142 @@
+---
+import Layout from "../layouts/Layout.astro";
+import PageContainer from "../components/PageContainer.astro";
+import { getCouncilBodies, resolveBodyMembers } from "../shared/data";
+import {
+  BODY_GROUPS,
+  countSeatHolders,
+  formatMeetingDate,
+} from "../shared/bodies";
+
+const baseUrl = import.meta.env.BASE_URL;
+const bodies = await getCouncilBodies();
+const memberCounts = new Map(
+  await Promise.all(
+    bodies.map(
+      async (body) =>
+        [
+          body.organization.id,
+          countSeatHolders(await resolveBodyMembers(body.organization.id)),
+        ] as const,
+    ),
+  ),
+);
+const groups = BODY_GROUPS.map((group) => ({
+  group,
+  bodies: bodies.filter((body) => body.group === group),
+})).filter((entry) => entry.bodies.length > 0);
+---
+
+<Layout
+  title="Gremien"
+  description="Gemeinderat, Ausschüsse, Ortschaftsräte und Beiräte der Stadt Karlsruhe mit Mitgliedern und Sitzungen."
+  pagefindIgnore
+  navigationSection="bodies"
+>
+  <PageContainer class="bodies-page">
+    <h1 class="page-header">Gremien</h1>
+    <p class="subtitle">
+      {bodies.length} Gremien des Karlsruher Gemeinderats und der Ortschaften
+    </p>
+
+    {groups.map(({ group, bodies: groupBodies }) => (
+      <section class="body-group" aria-labelledby={`gruppe-${group}`}>
+        <h2 id={`gruppe-${group}`}>
+          {group}
+          <span class="body-group-count">{groupBodies.length}</span>
+        </h2>
+        <div class="body-grid">
+          {groupBodies.map((body) => {
+            const members = memberCounts.get(body.organization.id) ?? 0;
+            const next = body.meetings.next
+              ? formatMeetingDate(body.meetings.next.start)
+              : "";
+            const facts = [
+              members > 0 && `${members} Mitglieder`,
+              `${body.meetings.count} ${body.meetings.count === 1 ? "Sitzung" : "Sitzungen"}`,
+            ].filter(Boolean);
+            return (
+              <a href={`${baseUrl}gremien/${body.slug}`} class="body-card">
+                <span class="body-name">{body.organization.name}</span>
+                <span class="body-facts">{facts.join(" · ")}</span>
+                {next && <span class="body-next">Nächste Sitzung: {next}</span>}
+              </a>
+            );
+          })}
+        </div>
+      </section>
+    ))}
+  </PageContainer>
+</Layout>
+
+<style>
+  .subtitle {
+    text-align: center;
+    color: var(--color-text-muted);
+    margin-bottom: 24px;
+  }
+
+  .body-group + .body-group {
+    margin-top: 28px;
+  }
+
+  .body-group h2 {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin: 0 0 12px;
+    font-size: 1.3rem;
+    color: var(--color-primary);
+  }
+
+  .body-group-count {
+    font-size: 0.9rem;
+    font-weight: 400;
+    color: var(--color-text-muted);
+  }
+
+  .body-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+  }
+
+  /* Same link card as /fraktionen and the archive's year cards. */
+  .body-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 16px 18px;
+    background: #fff;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    text-decoration: none;
+    color: inherit;
+    transition:
+      border-color 0.15s,
+      box-shadow 0.15s;
+  }
+
+  .body-card:hover {
+    border-color: var(--color-link);
+    box-shadow: var(--shadow-card);
+  }
+
+  .body-name {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--color-link);
+  }
+
+  .body-facts,
+  .body-next {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+  }
+
+  @media screen and (max-width: 768px) {
+    .body-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

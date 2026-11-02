@@ -9,6 +9,7 @@
     "predev": "node scripts/ensure-pagefind-index.mjs",
     "dev": "astro dev",
     "data:setup": "node scripts/setup-local-data.mjs",
+    "data:people": "node scripts/fetch-oparl-people.mjs",
     "prestart": "node scripts/ensure-pagefind-index.mjs",
     "start": "astro dev",
     "build": "astro build",
@@ -24,6 +25,7 @@
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",
+    "@fontsource/pt-sans": "^5.3.0",
     "astro": "^7.4.4",
     "pagefind": "^1.5.2"
   },
