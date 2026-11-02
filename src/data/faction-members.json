@@ -1,0 +1,572 @@
+{
+  "version": 1,
+  "organization": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/organizations/gr/32130",
+  "legislativeTerm": "2024-2029",
+  "source": {
+    "url": "https://sitzungskalender.karlsruhe.de/db/ratsinformation/organisation-gr-32130",
+    "retrieved": "2026-11-02",
+    "note": "Fraktion bzw. Liste wie im Reiter „Zusammensetzung“ angegeben. councilSince/councilUntil sind die Daten der Gemeinderatsmitgliedschaft, nicht eines Fraktionseintritts. Fraktionswechsel innerhalb der Wahlperiode sind nicht erfasst; bei ausgeschiedenen Mitgliedern steht die zuletzt angezeigte Angabe."
+  },
+  "factions": {
+    "gruene": {
+      "name": "GRÜNE",
+      "submitterIds": [
+        "gruene"
+      ]
+    },
+    "cdu": {
+      "name": "CDU",
+      "submitterIds": [
+        "cdu"
+      ]
+    },
+    "spd": {
+      "name": "SPD",
+      "submitterIds": [
+        "spd"
+      ]
+    },
+    "afd": {
+      "name": "AfD",
+      "submitterIds": [
+        "afd"
+      ]
+    },
+    "fdp-fw": {
+      "name": "FDP/FW",
+      "submitterIds": [
+        "fdp",
+        "fw"
+      ]
+    },
+    "die-linke": {
+      "name": "Die Linke",
+      "submitterIds": [
+        "die-linke"
+      ]
+    },
+    "kal": {
+      "name": "KAL",
+      "submitterIds": [
+        "kal"
+      ]
+    },
+    "die-partei": {
+      "name": "Die PARTEI",
+      "submitterIds": [
+        "die-partei"
+      ]
+    },
+    "volt": {
+      "name": "Volt",
+      "submitterIds": [
+        "volt"
+      ]
+    },
+    "fuer": {
+      "name": "FÜR",
+      "submitterIds": [
+        "fuer"
+      ]
+    }
+  },
+  "members": [
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/449",
+      "name": "Dr. Frank Mentrup",
+      "faction": null,
+      "risLabel": "SPD",
+      "role": "Vorsitz",
+      "councilSince": "2013-03-01",
+      "councilUntil": null,
+      "note": "Oberbürgermeister; Angabe im RIS ist die Partei, keine Fraktion"
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/65290",
+      "name": "Ceren Akbaba",
+      "faction": "gruene",
+      "risLabel": "GRÜNE",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2024-07-23",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/61706",
+      "name": "Verena Anlauf",
+      "faction": "gruene",
+      "risLabel": "GRÜNE",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2016-05-01",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/53",
+      "name": "Bernd Belschner",
+      "faction": "gruene",
+      "risLabel": "GRÜNE",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2026-04-01",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/65304",
+      "name": "Anne Berghoff",
+      "faction": "die-linke",
+      "risLabel": "Die Linke",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2024-07-23",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/62111",
+      "name": "Annette Böringer",
+      "faction": "fdp-fw",
+      "risLabel": "FDP/FW",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2019-07-23",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/61481",
+      "name": "Max Braun",
+      "faction": "die-partei",
+      "risLabel": "Die PARTEI",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2014-07-29",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/62207",
+      "name": "Tobias Bunk-Merkel",
+      "faction": "cdu",
+      "risLabel": "CDU",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2024-07-23",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/9",
+      "name": "Lüppo Cramer",
+      "faction": "kal",
+      "risLabel": "KAL",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "1984-11-01",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/62108",
+      "name": "Dr. Clemens Cremer",
+      "faction": "gruene",
+      "risLabel": "GRÜNE",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2019-07-23",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/61482",
+      "name": "Dr. Rahsan Dogan",
+      "faction": "cdu",
+      "risLabel": "CDU",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2014-07-29",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/65305",
+      "name": "Sonja Döring",
+      "faction": "kal",
+      "risLabel": "KAL",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2024-07-23",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/65292",
+      "name": "Ivo Dujmovic",
+      "faction": "gruene",
+      "risLabel": "GRÜNE",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2024-07-23",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/65735",
+      "name": "Leyla Duran",
+      "faction": "die-linke",
+      "risLabel": "Die Linke",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2026-05-01",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/120",
+      "name": "Elke Ernemann",
+      "faction": "spd",
+      "risLabel": "SPD",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2004-09-01",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/62103",
+      "name": "Jorinda Fahringer",
+      "faction": "gruene",
+      "risLabel": "GRÜNE",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2019-07-23",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/61483",
+      "name": "Dr. Raphael Fechler",
+      "faction": "spd",
+      "risLabel": "SPD",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2023-02-01",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/65293",
+      "name": "Fabian Gaukel",
+      "faction": "volt",
+      "risLabel": "Volt",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2024-07-23",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/65294",
+      "name": "Adina Geißinger",
+      "faction": "volt",
+      "risLabel": "Volt",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2024-07-23",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/350",
+      "name": "Michael Haug",
+      "faction": "kal",
+      "risLabel": "KAL",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2017-01-17",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/65295",
+      "name": "Dr. Susanne Heynen",
+      "faction": "gruene",
+      "risLabel": "GRÜNE",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2024-07-23",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/300",
+      "name": "Thomas H. Hock",
+      "faction": "fdp-fw",
+      "risLabel": "FDP/FW",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2009-07-28",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/122",
+      "name": "Detlef Hofmann",
+      "faction": "cdu",
+      "risLabel": "CDU",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2004-09-01",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/457",
+      "name": "Dr. Anton Huber",
+      "faction": "spd",
+      "risLabel": "SPD",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2019-07-23",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/303",
+      "name": "Friedemann Kalmbach",
+      "faction": "fuer",
+      "risLabel": "FÜR",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2009-07-28",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/65361",
+      "name": "Tanja Kaufmann",
+      "faction": "die-linke",
+      "risLabel": "Die Linke",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2024-12-01",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/61498",
+      "name": "Andreas Kehrle",
+      "faction": "cdu",
+      "risLabel": "CDU",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2024-07-23",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/62139",
+      "name": "Sonja Klingert",
+      "faction": "gruene",
+      "risLabel": "GRÜNE",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2024-07-23",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/65363",
+      "name": "Christian Klinkhardt",
+      "faction": "gruene",
+      "risLabel": "GRÜNE",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2024-07-23",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/62102",
+      "name": "Aljoscha Löffler",
+      "faction": "gruene",
+      "risLabel": "GRÜNE",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2019-07-23",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/62116",
+      "name": "Petra Lorenz",
+      "faction": "fdp-fw",
+      "risLabel": "FDP/FW",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2019-07-23",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/1",
+      "name": "Bettina Meier-Augenstein",
+      "faction": "cdu",
+      "risLabel": "CDU",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "1999-11-01",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/452",
+      "name": "Dirk Müller",
+      "faction": "cdu",
+      "risLabel": "CDU",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2018-01-01",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/29",
+      "name": "Dr. Thomas Müller",
+      "faction": "cdu",
+      "risLabel": "CDU",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "1999-11-01",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/65297",
+      "name": "Kien Nguyen",
+      "faction": "volt",
+      "risLabel": "Volt",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2024-07-23",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/62145",
+      "name": "Dr. Stefan Noé",
+      "faction": "fdp-fw",
+      "risLabel": "FDP/FW",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2024-07-23",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/128",
+      "name": "Tilman Pfannkuch",
+      "faction": "cdu",
+      "risLabel": "CDU",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2004-09-01",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/62110",
+      "name": "Dr. Iris Sardarabady",
+      "faction": "gruene",
+      "risLabel": "GRÜNE",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2019-07-23",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/65642",
+      "name": "Melis Schmid",
+      "faction": "spd",
+      "risLabel": "SPD",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2025-09-01",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/61492",
+      "name": "Dr. Paul Schmidt",
+      "faction": "afd",
+      "risLabel": "AfD",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2014-07-29",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/62117",
+      "name": "Oliver Schnell",
+      "faction": "afd",
+      "risLabel": "AfD",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2019-07-23",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/65298",
+      "name": "Katrin Schütz",
+      "faction": "cdu",
+      "risLabel": "CDU",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2024-07-23",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/65299",
+      "name": "Nicolas Schütz",
+      "faction": "cdu",
+      "risLabel": "CDU",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2024-07-23",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/65310",
+      "name": "Andreas Seidler",
+      "faction": "afd",
+      "risLabel": "AfD",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2024-07-23",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/62125",
+      "name": "Rouven Stolz",
+      "faction": "afd",
+      "risLabel": "AfD",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2024-07-23",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/65300",
+      "name": "Mathias Tröndle",
+      "faction": "spd",
+      "risLabel": "SPD",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2024-07-23",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/409",
+      "name": "Sibel Uysal",
+      "faction": "spd",
+      "risLabel": "SPD",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2014-07-29",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/62203",
+      "name": "Uwe Winkler",
+      "faction": "afd",
+      "risLabel": "AfD",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2026-07-01",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/63698",
+      "name": "Leonie Wolf",
+      "faction": "gruene",
+      "risLabel": "GRÜNE",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2021-11-01",
+      "councilUntil": null
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/62104",
+      "name": "Benjamin Bauer",
+      "faction": "gruene",
+      "risLabel": "GRÜNE",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2019-07-23",
+      "councilUntil": "2026-03-31"
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/65306",
+      "name": "Franziska Buresch",
+      "faction": "die-linke",
+      "risLabel": "Die Linke",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2024-07-23",
+      "councilUntil": "2026-04-30"
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/62174",
+      "name": "Marco Gottmann",
+      "faction": null,
+      "risLabel": null,
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2024-07-23",
+      "councilUntil": "2024-09-10",
+      "note": "Im RIS ohne Fraktions- oder Listenangabe"
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/65399",
+      "name": "Dr. Gerhard Lenz",
+      "faction": "afd",
+      "risLabel": "AfD",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2024-09-11",
+      "councilUntil": "2026-06-30"
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/306",
+      "name": "Yvette Melchien",
+      "faction": "spd",
+      "risLabel": "SPD",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2009-07-28",
+      "councilUntil": "2025-08-31"
+    },
+    {
+      "person": "https://web2.karlsruhe.de/ris/oparl/bodies/0001/people/65301",
+      "name": "Christina Zacharias",
+      "faction": "die-linke",
+      "risLabel": "Die Linke",
+      "role": "Ordentliches Mitglied",
+      "councilSince": "2024-07-23",
+      "councilUntil": "2024-11-30"
+    }
+  ]
+}
