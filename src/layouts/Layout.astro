@@ -1,4 +1,9 @@
 ---
+// PT Sans is the styleguide's body face. Self-hosted (no request to a font
+// CDN) and only the Latin subset, which covers German.
+import "@fontsource/pt-sans/latin-400.css";
+import "@fontsource/pt-sans/latin-400-italic.css";
+import "@fontsource/pt-sans/latin-700.css";
 import SiteNavigation from "../components/SiteNavigation.astro";
 import SiteFooter from "../components/SiteFooter.astro";
 import SiteHint from "../components/SiteHint.astro";
@@ -90,25 +95,38 @@ const canonicalUrl = buildCanonicalUrl(Astro.url, Astro.site);
 </html>
 
 <style is:global>
+  /* Colors and type follow the GRÜNE styleguide (September 2023): Tanne is
+     the primary color, Sand the light ground, Sonne the highlight. Text and
+     links use Tanne (9:1 on white); Klee only just clears 4.5:1 and Himmel
+     fails it, so Klee is kept for hover and focus and Himmel is unused. */
   :root {
-    --color-primary: #fdcb00;
-    --color-primary-hover: #f4a900;
-    --color-link: #0066cc;
-    --color-link-hover: #004999;
-    --color-text: #333;
-    --color-text-muted: #555;
-    --color-border: #ddd;
-    --color-bg-card: #f9f9f9;
-    --color-bg-hover: #fafafa;
-    --color-focus: #175f94;
+    --gruene-tanne: #005437;
+    --gruene-klee: #008939;
+    --gruene-grashalm: #8abd24;
+    --gruene-sand: #f5f1e9;
+    --gruene-himmel: #0ba1dd;
+    --gruene-sonne: #fff17a;
+
+    --color-primary: var(--gruene-tanne);
+    --color-primary-hover: #003d28;
+    --color-on-primary: var(--gruene-sand);
+    --color-link: var(--gruene-tanne);
+    --color-link-hover: var(--gruene-klee);
+    --color-highlight: var(--gruene-sonne);
+    --color-text: #1f2a24;
+    --color-text-muted: #4f5a54;
+    --color-border: #ddd6c8;
+    --color-bg-card: var(--gruene-sand);
+    --color-bg-hover: #faf8f3;
+    --color-focus: var(--gruene-klee);
     --color-danger: #b10000;
     --color-success: #176b3a;
     --color-success-bg: #e8f5ec;
-    --color-info: #14508f;
-    --color-info-bg: #e6eefa;
+    --color-info: var(--gruene-tanne);
+    --color-info-bg: #e3efe8;
     --shadow-card: 0 4px 6px rgba(0, 0, 0, 0.1);
     --radius: 8px;
-    --font-family: Arial, sans-serif;
+    --font-family: "PT Sans", Arial, sans-serif;
     /* The sticky site header's height. Anything that sticks or scrolls into
        view below it has to clear this, so it lives here rather than in
        `SiteNavigation.astro`, which only consumes it. */
@@ -180,7 +198,7 @@ const canonicalUrl = buildCanonicalUrl(Astro.url, Astro.site);
        "GemeinderatsRadar" is wider than the viewport. */
     font-size: clamp(1.75rem, 1.25rem + 2.5vw, 2.5rem);
     line-height: 1.2;
-    color: var(--color-text);
+    color: var(--color-primary);
     margin-bottom: 20px;
     font-family: var(--font-family);
     font-weight: bold;
@@ -203,7 +221,7 @@ const canonicalUrl = buildCanonicalUrl(Astro.url, Astro.site);
     margin: 0 0 10px;
     font-size: 1.35rem;
     font-weight: bold;
-    color: var(--color-text);
+    color: var(--color-primary);
   }
 
   /* Title block shared by the paper and meeting detail pages: left aligned,

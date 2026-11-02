@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",
+    "@fontsource/pt-sans": "^5.3.0",
     "astro": "^7.4.4",
     "pagefind": "^1.5.2"
   },
