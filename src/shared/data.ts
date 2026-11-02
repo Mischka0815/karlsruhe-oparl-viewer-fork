@@ -10,7 +10,15 @@ import {
   getEffectiveMeetingEnd,
   getOParlEntityId,
   normalizeStringList,
+  slugify,
 } from "./utils";
+import {
+  getBodyGroup,
+  isCouncilBody,
+  summarizeBodyMeetings,
+  type BodyGroup,
+  type BodyMeetingSummary,
+} from "./bodies";
 import { MEETING_DIGEST_LEADS } from "./meeting-digest";
 import { buildMeetingFilterModel } from "./meeting-filters";
 import { parseOrtschaftName } from "./meeting-presentation";
@@ -401,6 +409,75 @@ export const getPaperCountsByDistrict = memoizeAsync(
     return buildPaperCountsByDistrict(papers);
   },
 );
+
+// --- Council bodies ---
+
+export interface CouncilBody {
+  organization: Organization;
+  /** `/gremien/[slug]`; slugs are unique across the 28 current bodies. */
+  slug: string;
+  group: BodyGroup;
+  meetings: BodyMeetingSummary;
+}
+
+/** Every body (`organizations/gr/…`) with its meeting summary, by name. */
+export const getCouncilBodies = memoizeAsync(
+  async (): Promise<CouncilBody[]> => {
+    const [organizationsById, meetings] = await Promise.all([
+      loadOrganizations(),
+      getMeetings(),
+    ]);
+    const now = new Date();
+    const isPast = (meeting: Meeting) =>
+      getEffectiveMeetingEnd(meeting.start, meeting.end) < now;
+
+    const meetingsByOrganization = new Map<string, Meeting[]>();
+    for (const meeting of meetings) {
+      for (const organizationId of meeting.organization ?? []) {
+        const list = meetingsByOrganization.get(organizationId) ?? [];
+        list.push(meeting);
+        meetingsByOrganization.set(organizationId, list);
+      }
+    }
+
+    const bodies = [...organizationsById.values()]
+      .filter(isCouncilBody)
+      .map((organization) => ({
+        organization,
+        slug: slugify(organization.name),
+        group: getBodyGroup(organization.name),
+        meetings: summarizeBodyMeetings(
+          meetingsByOrganization.get(organization.id) ?? [],
+          isPast,
+        ),
+      }))
+      .sort((left, right) =>
+        left.organization.name.localeCompare(right.organization.name, "de"),
+      );
+
+    const slugs = new Set<string>();
+    for (const body of bodies) {
+      if (slugs.has(body.slug)) {
+        throw new Error(`Duplicate body slug: ${body.slug}`);
+      }
+      slugs.add(body.slug);
+    }
+    return bodies;
+  },
+);
+
+/** Upcoming or past meetings of one body, nearest first. */
+export async function getBodyMeetings(
+  organizationId: string,
+  when: "upcoming" | "past",
+  limit: number,
+): Promise<Meeting[]> {
+  const meetings =
+    when === "upcoming" ? await getUpcomingMeetings() : await getPastMeetings();
+  return meetings
+    .filter((meeting) => (meeting.organization ?? []).includes(organizationId))
+    .slice(0, limit);
+}
 
 // --- People, memberships, factions ---
 

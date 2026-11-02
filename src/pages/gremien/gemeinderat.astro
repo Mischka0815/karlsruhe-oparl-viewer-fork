@@ -23,6 +23,7 @@ import {
   buildMeetingDetailUrl,
   getOParlEntityId,
 } from "../../shared/utils";
+import { formatMeetingDate } from "../../shared/bodies";
 import type { Meeting } from "../../shared/types";
 
 const MEETINGS_SHOWN = 3;
@@ -75,12 +76,12 @@ const formatDay = (isoDay: string) =>
   title="Gemeinderat"
   description={`Zusammensetzung des Karlsruher Gemeinderats: ${totalSeats} Sitze nach Fraktionen, alle Mitglieder der Wahlperiode ${index.legislativeTerm} und die nächsten Sitzungen.`}
   pagefindIgnore
-  navigationSection="submitters"
+  navigationSection="bodies"
 >
   <PageContainer class="council-page">
     <Breadcrumbs
       items={[
-        { label: "Fraktionen", href: `${baseUrl}fraktionen` },
+        { label: "Gremien", href: `${baseUrl}gremien` },
         { label: "Gemeinderat" },
       ]}
     />
@@ -212,9 +213,7 @@ const formatDay = (isoDay: string) =>
             {column.meetings.length > 0 ? (
               <ul class="council-meetings">
                 {column.meetings.map((meeting) => {
-                  const { day: meetingDay, time } = formatMeetingDayAndTime(
-                    meeting.start,
-                  );
+                  const { time } = formatMeetingDayAndTime(meeting.start);
                   return (
                     <li>
                       <a
@@ -223,7 +222,7 @@ const formatDay = (isoDay: string) =>
                           getOParlEntityId(meeting.id),
                         )}
                       >
-                        {meetingDay}
+                        {formatMeetingDate(meeting.start)}
                         {time && `, ${time} Uhr`}
                       </a>
                       <span class="member-meta">

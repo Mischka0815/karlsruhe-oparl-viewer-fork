@@ -20,6 +20,7 @@ Data fetching, caching, filtering logic, utilities, and TypeScript types.
 | `paper-presentation.ts`         | Hides import artifacts: bulk stamp, placeholder offices  |
 | `paper-similarity.ts`           | Topical recommendations in mirror order                  |
 | `people.ts`                     | Body members, faction lookup and seat counts by day      |
+| `bodies.ts`                     | Body groups, meeting summary, seat holders, date format  |
 | `paper-detail-paths.ts`         | Maps paper references to URL slugs                       |
 | `meeting-paths.ts`              | Maps OParl meeting IDs to meeting detail routes          |
 | `meeting-calendar.ts`           | Serializes one meeting as an RFC 5545 calendar event     |
@@ -93,7 +94,9 @@ syndication-data/docs (data-source.ts, DATA_LOCAL_DIR)
   links are inferred. Older checkouts without the artifact render no suggestions.
 - People and memberships come from the optional `people` and `memberships`
   stores (`loadOptionalArray`), which the mirror does not publish yet — until
-  it does, every people view is empty. Only mandate roles count as members
+  it does, every people view is empty. For local work, `npm run data:people`
+  fetches both straight from the OParl API into the data checkout, already
+  stripped of contact fields and non-public people. Only mandate roles count as members
   (`MANDATE_ROLES` in `people.ts`); staff roles and role-less memberships are
   dropped, and so are memberships whose person is not in `people` (the RIS
   answers 401 for non-public people). Never render `email`, `phone` or

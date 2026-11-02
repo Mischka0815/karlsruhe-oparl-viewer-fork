@@ -292,12 +292,13 @@ maschinenlesbar sind (Tabelle, Namensliste, Ja/Nein/Enthaltung).
    Loader in `data.ts`). Gegen die echten OParl-Daten vom 2. November 2026
    liefert `selectBodyMembers` für den Gemeinderat genau die 49 Personen der
    Fraktionszuordnung; über alle 26 Gremien sind es 1.126 aktive Mandate von
-   272 Personen. Als Nächstes: der Mirror muss `people` und `memberships`
-   veröffentlichen, dann die Seite `/gremien/gemeinderat` als Prototyp.
-   Offen ist die Darstellung der AfD: Der Viewer zeigt sie bei Antragstellern
-   bisher als „-“ und ohne Fraktionsseite (`HIDDEN_SUBMITTER_IDS` in
-   `data.ts`). Für Sitzverteilung und Mitgliederlisten muss entschieden
-   werden, ob diese Regel gilt.
+   272 Personen. Darauf stehen jetzt `/gremien/gemeinderat` (Sitzverteilung,
+   Mitglieder nach Fraktion), `/gremien` (28 Gremien in vier Gruppen) und
+   `/gremien/[slug]` (Mitglieder nach Rolle, nächste und letzte Sitzungen).
+   Die AfD wird dort wie alle anderen Fraktionen dargestellt. Bis der Mirror
+   `people` und `memberships` veröffentlicht, holt `npm run data:people`
+   die Daten lokal; im Deployment bleiben die Mitgliederlisten bis dahin leer.
+   Als Nächstes: Personenseiten `/personen/[id]`.
 3. Parallel den Machbarkeitstest für Abstimmungen (Phase 3) mit zehn
    Protokollen machen.
 4. Lizenzfrage (CC BY-ND) bei der Stadt Karlsruhe klären.
