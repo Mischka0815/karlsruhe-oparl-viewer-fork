@@ -19,6 +19,7 @@ Data fetching, caching, filtering logic, utilities, and TypeScript types.
 | `meeting-presentation.ts`       | Display name, month groups, row date/time for meetings   |
 | `paper-presentation.ts`         | Hides import artifacts: bulk stamp, placeholder offices  |
 | `paper-similarity.ts`           | Topical recommendations in mirror order                  |
+| `people.ts`                     | Body members, faction lookup and seat counts by day      |
 | `paper-detail-paths.ts`         | Maps paper references to URL slugs                       |
 | `meeting-paths.ts`              | Maps OParl meeting IDs to meeting detail routes          |
 | `meeting-calendar.ts`           | Serializes one meeting as an RFC 5545 calendar event     |
@@ -90,6 +91,19 @@ syndication-data/docs (data-source.ts, DATA_LOCAL_DIR)
   `selectSimilarPapers()` drops self-links, explicit parent/child relations,
   missing/deleted targets and duplicate destinations. No scores or reciprocal
   links are inferred. Older checkouts without the artifact render no suggestions.
+- People and memberships come from the optional `people` and `memberships`
+  stores (`loadOptionalArray`), which the mirror does not publish yet — until
+  it does, every people view is empty. Only mandate roles count as members
+  (`MANDATE_ROLES` in `people.ts`); staff roles and role-less memberships are
+  dropped, and so are memberships whose person is not in `people` (the RIS
+  answers 401 for non-public people). Never render `email`, `phone` or
+  `locationObject`, even if an export carries them
+- Factions are **not** in OParl. `src/data/faction-members.json` is a curated
+  Gemeinderat mapping keyed by OParl person id, shipped with the viewer and
+  checked by `tests/people.test.mjs`. Its dates are council membership dates,
+  not faction dates. `factions.*.submitterIds` links to `paper-submitters.json`
+  keys (FDP/FW maps to both `fdp` and `fw`). "Today" for membership questions is
+  the Karlsruhe calendar day (`getBerlinCalendarDate()`)
 - Feed metadata comes from `feed-index.json`; `loadSyndicationFeedCatalog()`
   indexes committee and district feeds for contextual links and `/feeds`
 - Generated sitting previews (`digests/meetings/<meeting id>-<lead>.json`) are

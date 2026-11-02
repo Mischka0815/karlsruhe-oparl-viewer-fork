@@ -22,21 +22,21 @@ Leitplanken, die aus diesem Repo kommen und bleiben sollen:
 
 ## 2. Funktionsvergleich
 
-| Bereich                 | dis.delphi.tools                                                                                                            | GemeinderatsRadar heute                                            | Lücke    |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | -------- |
-| Volltextsuche Dokumente | Server-API, Facetten                                                                                                        | Pagefind, 5 Filter, gespeicherte Suchen                            | klein    |
-| Suche über Entitäten    | Tabs: Dokumente, Sitzungen, Personen, Gremien, Reden, Abstimmungen                                                          | nur Vorlagen                                                       | mittel   |
-| Sitzungskalender        | Monat / Woche / Liste, Tastaturnavigation                                                                                   | Liste kommend + Archiv nach Jahren, ICS                            | mittel   |
-| Sitzungsdetail          | TOPs mit Ergebnis, Abstimmungsbalken, Reden je TOP, Navigation vorige/nächste Sitzung                                       | öffentliche Tagesordnung, Vorschau (Digest), ICS                   | groß     |
-| Gremien                 | 38 Gremien, Mitglieder, Sitzverteilung, Kennzahlen                                                                          | nur als Filterwert                                                 | groß     |
-| Personen                | Profile mit Fraktion, Rolle, Porträt                                                                                        | fehlt                                                              | groß     |
-| Abstimmungen            | 713 namentliche Abstimmungen mit Einzelstimmen                                                                              | fehlt                                                              | groß     |
-| Statistik               | Fraktionsdisziplin, Stimmverteilung, Übereinstimmungsmatrix, Abweichler                                                     | fehlt                                                              | groß     |
-| Reden                   | Livestream-Transkripte, Redezeit vs. Sitzanteil, „gesagt vs. gestimmt“, Tonlage, wer über wen, typische Wörter, Lesbarkeit  | fehlt                                                              | sehr groß |
-| Karte                   | Orte aus Dokumenten (Straße, Platz, Schule …) auf einer Karte, Zeitfilter                                                   | Stadtteil-Seiten ohne Karte                                        | mittel   |
-| Themenkategorien        | z. B. „Bildung & Kultur“, „Finanzen & Haushalt“                                                                             | fehlt (Stadtteile ja)                                              | mittel   |
-| Startseite              | Dashboard: letzte Sitzung, nächste Sitzung, diese Woche, neue Dokumente, Zahlen                                             | Suchseite                                                          | mittel   |
-| Schnittstellen          | JSON-API, ICS je Gremium, MCP-Server                                                                                        | ICS, Feeds je Gremium/Stadtteil                                    | mittel   |
+| Bereich                 | dis.delphi.tools                                                                                                           | GemeinderatsRadar heute                          | Lücke     |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ | --------- |
+| Volltextsuche Dokumente | Server-API, Facetten                                                                                                       | Pagefind, 5 Filter, gespeicherte Suchen          | klein     |
+| Suche über Entitäten    | Tabs: Dokumente, Sitzungen, Personen, Gremien, Reden, Abstimmungen                                                         | nur Vorlagen                                     | mittel    |
+| Sitzungskalender        | Monat / Woche / Liste, Tastaturnavigation                                                                                  | Liste kommend + Archiv nach Jahren, ICS          | mittel    |
+| Sitzungsdetail          | TOPs mit Ergebnis, Abstimmungsbalken, Reden je TOP, Navigation vorige/nächste Sitzung                                      | öffentliche Tagesordnung, Vorschau (Digest), ICS | groß      |
+| Gremien                 | 38 Gremien, Mitglieder, Sitzverteilung, Kennzahlen                                                                         | nur als Filterwert                               | groß      |
+| Personen                | Profile mit Fraktion, Rolle, Porträt                                                                                       | fehlt                                            | groß      |
+| Abstimmungen            | 713 namentliche Abstimmungen mit Einzelstimmen                                                                             | fehlt                                            | groß      |
+| Statistik               | Fraktionsdisziplin, Stimmverteilung, Übereinstimmungsmatrix, Abweichler                                                    | fehlt                                            | groß      |
+| Reden                   | Livestream-Transkripte, Redezeit vs. Sitzanteil, „gesagt vs. gestimmt“, Tonlage, wer über wen, typische Wörter, Lesbarkeit | fehlt                                            | sehr groß |
+| Karte                   | Orte aus Dokumenten (Straße, Platz, Schule …) auf einer Karte, Zeitfilter                                                  | Stadtteil-Seiten ohne Karte                      | mittel    |
+| Themenkategorien        | z. B. „Bildung & Kultur“, „Finanzen & Haushalt“                                                                            | fehlt (Stadtteile ja)                            | mittel    |
+| Startseite              | Dashboard: letzte Sitzung, nächste Sitzung, diese Woche, neue Dokumente, Zahlen                                            | Suchseite                                        | mittel    |
+| Schnittstellen          | JSON-API, ICS je Gremium, MCP-Server                                                                                       | ICS, Feeds je Gremium/Stadtteil                  | mittel    |
 
 Was GemeinderatsRadar schon besser oder anders macht und behalten sollte:
 Änderungshistorie von Vorlagen (`PaperHistory`), thematisch ähnliche Vorlagen,
@@ -48,18 +48,18 @@ SEO und Sitemap.
 Das ist der eigentliche Engpass. Die UI ist in jedem Fall machbar, die Frage ist,
 woher die Daten kommen.
 
-| Daten                     | Quelle                                                                                         | Im Mirror?  | Aufwand                                                    |
-| ------------------------- | ---------------------------------------------------------------------------------------------- | ----------- | ---------------------------------------------------------- |
-| Personen                  | OParl `bodies/0001/people` (geprüft: liefert Name, Anrede, Mitgliedschaften)                   | nein        | gering: Scraper um zwei Listen erweitern                   |
-| Mitgliedschaften, Rollen  | OParl `bodies/0001/memberships`                                                                | nein        | gering                                                     |
-| Wahlperioden              | OParl `legislativeTerm` (2024–2029 usw.)                                                       | nein        | gering                                                     |
-| Protokolle je Sitzung     | OParl `meeting.verbatimProtocol` / `resultsProtocol`, Dateien unter `file-contents/`           | teilweise   | vorhanden, aber nicht ausgewertet                          |
-| Beschlussergebnis je TOP  | OParl `agendaItem.result` bzw. Protokoll-Text                                                  | zu prüfen   | mittel                                                     |
-| Namentliche Abstimmungen  | Abstimmungsanlagen / Protokolle des Gemeinderats (die Referenzseite nennt 713 Abstimmungen)    | nein        | hoch: PDF-Parsing, Namenszuordnung                         |
-| Reden                     | Livestreams des Gemeinderats → Spracherkennung → Sprecherzuordnung                             | nein        | sehr hoch: Audio-Pipeline, Rechenzeit, Rechtsfrage         |
-| Themenkategorien          | LLM-Klassifikation, analog zu `summaries/papers/`                                              | nein        | mittel                                                     |
-| Orte                      | Ortsnamen aus Volltext + Geokodierung (OSM/Nominatim, Straßenverzeichnis der Stadt)            | nein        | mittel                                                     |
-| Porträts                  | Stadt Karlsruhe / Fotografen                                                                   | nein        | rechtlich klären, sonst Initialen                          |
+| Daten                    | Quelle                                                                                      | Im Mirror? | Aufwand                                            |
+| ------------------------ | ------------------------------------------------------------------------------------------- | ---------- | -------------------------------------------------- |
+| Personen                 | OParl `bodies/0001/people` (geprüft: liefert Name, Anrede, Mitgliedschaften)                | nein       | gering: Scraper um zwei Listen erweitern           |
+| Mitgliedschaften, Rollen | OParl `bodies/0001/memberships`                                                             | nein       | gering                                             |
+| Wahlperioden             | OParl `legislativeTerm` (2024–2029 usw.)                                                    | nein       | gering                                             |
+| Protokolle je Sitzung    | OParl `meeting.verbatimProtocol` / `resultsProtocol`, Dateien unter `file-contents/`        | teilweise  | vorhanden, aber nicht ausgewertet                  |
+| Beschlussergebnis je TOP | OParl `agendaItem.result` bzw. Protokoll-Text                                               | zu prüfen  | mittel                                             |
+| Namentliche Abstimmungen | Abstimmungsanlagen / Protokolle des Gemeinderats (die Referenzseite nennt 713 Abstimmungen) | nein       | hoch: PDF-Parsing, Namenszuordnung                 |
+| Reden                    | Livestreams des Gemeinderats → Spracherkennung → Sprecherzuordnung                          | nein       | sehr hoch: Audio-Pipeline, Rechenzeit, Rechtsfrage |
+| Themenkategorien         | LLM-Klassifikation, analog zu `summaries/papers/`                                           | nein       | mittel                                             |
+| Orte                     | Ortsnamen aus Volltext + Geokodierung (OSM/Nominatim, Straßenverzeichnis der Stadt)         | nein       | mittel                                             |
+| Porträts                 | Stadt Karlsruhe / Fotografen                                                                | nein       | rechtlich klären, sonst Initialen                  |
 
 Folgerung: Personen, Gremien und Mitgliedschaften sind ein schneller Gewinn, weil
 OParl sie bereits anbietet. Abstimmungen und Reden sind eigene Datenprojekte im
@@ -124,15 +124,15 @@ Abgerufen über `bodies/0001/people` und `bodies/0001/memberships`. Die
 Schnittstelle liefert standardmäßig 10 Einträge pro Seite, akzeptiert aber
 `?limit=100`. Ein vollständiger Abruf dauert so unter einer Minute.
 
-| Kennzahl                                  | Wert                                                |
-| ----------------------------------------- | --------------------------------------------------- |
-| Personen (öffentlich)                     | 714, davon 541 mit Mitgliedschaft                    |
-| Mitgliedschaften                          | 4.050, Startdaten 1965 bis 2026                     |
-| Rohgröße                                  | je ca. 2 MB JSON                                    |
-| Gremien mit Mitgliedschaften              | 26, alle bereits in `organizations.json`            |
-| Gemeinderat, aktuell ordentlich + Vorsitz | 50                                                  |
-| Felder Person                             | Name, Anrede, Titel, `affix` (z. B. „Stadträtin“)   |
-| Felder Mitgliedschaft                     | Rolle, Start, Ende, `votingRight`                   |
+| Kennzahl                                  | Wert                                              |
+| ----------------------------------------- | ------------------------------------------------- |
+| Personen (öffentlich)                     | 714, davon 541 mit Mitgliedschaft                 |
+| Mitgliedschaften                          | 4.050, Startdaten 1965 bis 2026                   |
+| Rohgröße                                  | je ca. 2 MB JSON                                  |
+| Gremien mit Mitgliedschaften              | 26, alle bereits in `organizations.json`          |
+| Gemeinderat, aktuell ordentlich + Vorsitz | 50                                                |
+| Felder Person                             | Name, Anrede, Titel, `affix` (z. B. „Stadträtin“) |
+| Felder Mitgliedschaft                     | Rolle, Start, Ende, `votingRight`                 |
 
 Drei Punkte ändern die Planung:
 
@@ -287,10 +287,17 @@ maschinenlesbar sind (Tabelle, Namensliste, Ja/Nein/Enthaltung).
 ## 7. Nächste Schritte
 
 1. Entscheiden, ob upstream beigetragen oder im Fork gearbeitet wird.
-2. Phase 1: Datentest und Fraktionszuordnung für den Gemeinderat sind erledigt
-   (siehe Phase 1). Als Nächstes Typen und Loader im Viewer
-   (`types/person.ts`, `types/membership.ts`, `data.ts`) und die Seite
-   `/gremien/gemeinderat` als erster Prototyp.
+2. Phase 1: Datentest, Fraktionszuordnung sowie Typen und Loader im Viewer
+   sind erledigt (`types/person.ts`, `types/faction-members.ts`, `people.ts`,
+   Loader in `data.ts`). Gegen die echten OParl-Daten vom 2. November 2026
+   liefert `selectBodyMembers` für den Gemeinderat genau die 49 Personen der
+   Fraktionszuordnung; über alle 26 Gremien sind es 1.126 aktive Mandate von
+   272 Personen. Als Nächstes: der Mirror muss `people` und `memberships`
+   veröffentlichen, dann die Seite `/gremien/gemeinderat` als Prototyp.
+   Offen ist die Darstellung der AfD: Der Viewer zeigt sie bei Antragstellern
+   bisher als „-“ und ohne Fraktionsseite (`HIDDEN_SUBMITTER_IDS` in
+   `data.ts`). Für Sitzverteilung und Mitgliederlisten muss entschieden
+   werden, ob diese Regel gilt.
 3. Parallel den Machbarkeitstest für Abstimmungen (Phase 3) mit zehn
    Protokollen machen.
 4. Lizenzfrage (CC BY-ND) bei der Stadt Karlsruhe klären.

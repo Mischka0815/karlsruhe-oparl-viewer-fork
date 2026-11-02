@@ -15,8 +15,19 @@ import { MEETING_DIGEST_LEADS } from "./meeting-digest";
 import { buildMeetingFilterModel } from "./meeting-filters";
 import { parseOrtschaftName } from "./meeting-presentation";
 import { selectSimilarPapers } from "./paper-similarity";
+import {
+  countSeatsByFaction,
+  findFactionMember,
+  getBerlinCalendarDate,
+  selectBodyMembers,
+} from "./people";
+import factionMemberIndex from "../data/faction-members.json";
 import type {
+  FactionMember,
+  FactionMemberIndex,
+  FactionSeatCount,
   FileContent,
+  Membership,
   Meeting,
   MeetingDigest,
   MeetingDigestLead,
@@ -28,6 +39,8 @@ import type {
   PaperSimilarityIndex,
   PaperSubmitter,
   PaperSubmitterIndex,
+  Person,
+  ResolvedMembership,
   ResolvedPaperSubmitter,
   ResolvedAgendaItem,
   ResolvedConsultation,
@@ -36,6 +49,7 @@ import type {
 } from "./types";
 
 const PAPER_SUBMITTER_INDEX_VERSION = 3;
+const FACTION_MEMBER_INDEX_VERSION = 1;
 
 const SUBMITTER_NAME_OVERRIDES: Record<string, string> = {
   afd: "-",
@@ -387,6 +401,67 @@ export const getPaperCountsByDistrict = memoizeAsync(
     return buildPaperCountsByDistrict(papers);
   },
 );
+
+// --- People, memberships, factions ---
+
+/**
+ * Public people from the optional `people` store. Older checkouts have none,
+ * which leaves every people-dependent view empty rather than failing.
+ */
+export const loadPeople = memoizeAsync(
+  async (): Promise<Map<string, Person>> => {
+    const people = await dataSource.loadOptionalArray<Person>("people");
+    return new Map(
+      people
+        .filter((person) => !person.deleted)
+        .map((person) => [person.id, person]),
+    );
+  },
+);
+
+export const loadMemberships = memoizeAsync(async (): Promise<Membership[]> => {
+  const memberships =
+    await dataSource.loadOptionalArray<Membership>("memberships");
+  return memberships.filter((membership) => !membership.deleted);
+});
+
+/** The curated faction mapping is shipped with the viewer, not the mirror. */
+export const loadFactionMembers = memoizeAsync(
+  async (): Promise<FactionMemberIndex> => {
+    const index = factionMemberIndex as FactionMemberIndex;
+    if (index.version !== FACTION_MEMBER_INDEX_VERSION) {
+      throw new Error(
+        `Unsupported faction member index version: ${String(index.version)} (expected ${FACTION_MEMBER_INDEX_VERSION})`,
+      );
+    }
+    return index;
+  },
+);
+
+/** Mandate holders of one body on `day` (default: today in Karlsruhe). */
+export async function resolveBodyMembers(
+  organizationId: string,
+  day: string = getBerlinCalendarDate(),
+): Promise<ResolvedMembership[]> {
+  const [memberships, peopleById] = await Promise.all([
+    loadMemberships(),
+    loadPeople(),
+  ]);
+  return selectBodyMembers(memberships, organizationId, peopleById, day);
+}
+
+export async function getCouncilSeatsByFaction(
+  day: string = getBerlinCalendarDate(),
+): Promise<FactionSeatCount[]> {
+  return countSeatsByFaction(await loadFactionMembers(), day);
+}
+
+export async function resolvePersonFaction(
+  person: Person,
+  day: string = getBerlinCalendarDate(),
+): Promise<FactionMember | undefined> {
+  return findFactionMember(await loadFactionMembers(), person.id, day);
+}
 
 // --- Per-paper resolvers ---
 

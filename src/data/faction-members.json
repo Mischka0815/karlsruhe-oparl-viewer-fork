@@ -10,64 +10,43 @@
   "factions": {
     "gruene": {
       "name": "GRÜNE",
-      "submitterIds": [
-        "gruene"
-      ]
+      "submitterIds": ["gruene"]
     },
     "cdu": {
       "name": "CDU",
-      "submitterIds": [
-        "cdu"
-      ]
+      "submitterIds": ["cdu"]
     },
     "spd": {
       "name": "SPD",
-      "submitterIds": [
-        "spd"
-      ]
+      "submitterIds": ["spd"]
     },
     "afd": {
       "name": "AfD",
-      "submitterIds": [
-        "afd"
-      ]
+      "submitterIds": ["afd"]
     },
     "fdp-fw": {
       "name": "FDP/FW",
-      "submitterIds": [
-        "fdp",
-        "fw"
-      ]
+      "submitterIds": ["fdp", "fw"]
     },
     "die-linke": {
       "name": "Die Linke",
-      "submitterIds": [
-        "die-linke"
-      ]
+      "submitterIds": ["die-linke"]
     },
     "kal": {
       "name": "KAL",
-      "submitterIds": [
-        "kal"
-      ]
+      "submitterIds": ["kal"]
     },
     "die-partei": {
       "name": "Die PARTEI",
-      "submitterIds": [
-        "die-partei"
-      ]
+      "submitterIds": ["die-partei"]
     },
     "volt": {
       "name": "Volt",
-      "submitterIds": [
-        "volt"
-      ]
+      "submitterIds": ["volt"]
     },
     "fuer": {
       "name": "FÜR",
-      "submitterIds": [
-        "fuer"
-      ]
+      "submitterIds": ["fuer"]
     }
   },
   "members": [
