@@ -141,3 +141,47 @@ export function countSeatsByFaction(
         right.seats - left.seats || left.name.localeCompare(right.name, "de"),
     );
 }
+
+/**
+ * The mapping stores display names only ("Dr. Thomas Müller"); the last word
+ * is the family name for every entry it holds, double names included.
+ */
+function compareByLastNameWord(left: FactionMember, right: FactionMember) {
+  const lastWord = (name: string) => name.trim().split(/\s+/).at(-1) ?? name;
+  return (
+    lastWord(left.name).localeCompare(lastWord(right.name), "de") ||
+    left.name.localeCompare(right.name, "de")
+  );
+}
+
+export interface FactionMemberGroup extends FactionSeatCount {
+  members: FactionMember[];
+}
+
+/** Current members per faction, in seat order, each group by family name. */
+export function groupMembersByFaction(
+  index: FactionMemberIndex,
+  day: string,
+): FactionMemberGroup[] {
+  const current = selectCurrentFactionMembers(index, day);
+  return countSeatsByFaction(index, day).map((seatCount) => ({
+    ...seatCount,
+    members: current
+      .filter((member) => member.faction === seatCount.factionId)
+      .sort(compareByLastNameWord),
+  }));
+}
+
+/** Members who left the council during the term, most recent first. */
+export function selectFormerMembers(
+  index: FactionMemberIndex,
+  day: string,
+): FactionMember[] {
+  return index.members
+    .filter((member) => member.councilUntil && member.councilUntil < day)
+    .sort(
+      (left, right) =>
+        (right.councilUntil ?? "").localeCompare(left.councilUntil ?? "") ||
+        compareByLastNameWord(left, right),
+    );
+}

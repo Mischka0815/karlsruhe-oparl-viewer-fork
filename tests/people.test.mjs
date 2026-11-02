@@ -5,9 +5,11 @@ import {
   countSeatsByFaction,
   findFactionMember,
   getBerlinCalendarDate,
+  groupMembersByFaction,
   isActiveOn,
   selectBodyMembers,
   selectCurrentFactionMembers,
+  selectFormerMembers,
 } from "../src/shared/people.ts";
 
 const COUNCIL = "https://example.org/oparl/organizations/gr/1";
@@ -223,5 +225,46 @@ test("the shipped faction mapping is consistent", async () => {
       0,
     ),
     48,
+  );
+});
+
+test("members are grouped in seat order and sorted by family name", () => {
+  const named = (id, name, faction, since, until) => ({
+    ...seat(id, faction, since, until),
+    name,
+  });
+  const index = factionIndex([
+    named(1, "Dr. Frank Mentrup", null),
+    named(2, "Ceren Zeller", "gruene"),
+    named(3, "Verena Anlauf", "gruene"),
+    named(4, "Bettina Meier-Augenstein", "cdu"),
+    named(5, "Benjamin Bauer", "gruene", "2019-07-23", "2026-03-31"),
+  ]);
+  assert.deepEqual(
+    groupMembersByFaction(index, "2026-11-02").map((group) => [
+      group.factionId,
+      group.seats,
+      group.members.map((member) => member.name),
+    ]),
+    [
+      ["gruene", 2, ["Verena Anlauf", "Ceren Zeller"]],
+      ["cdu", 1, ["Bettina Meier-Augenstein"]],
+    ],
+  );
+});
+
+test("former members are the ones who left before the day, latest first", () => {
+  const index = factionIndex([
+    seat(1, "cdu", "2019-07-23", "2024-11-30"),
+    seat(2, "gruene", "2019-07-23", "2026-03-31"),
+    seat(3, "gruene", "2026-04-01"),
+    seat(4, "cdu", "2024-07-23", "2026-11-02"),
+  ]);
+  assert.deepEqual(
+    selectFormerMembers(index, "2026-11-02").map((member) => member.person),
+    [
+      "https://example.org/oparl/people/2",
+      "https://example.org/oparl/people/1",
+    ],
   );
 });

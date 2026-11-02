@@ -21,7 +21,10 @@ const baseUrl = import.meta.env.BASE_URL;
   <PageContainer class="submitters-page">
     <h1 class="page-header">Vorlagen nach antragstellender Fraktion</h1>
     <p class="subtitle">
-      {submitters.length} Fraktionen mit eingereichten Vorlagen
+      {submitters.length} Fraktionen mit eingereichten Vorlagen ·
+      <a href={`${baseUrl}gremien/gemeinderat`}>
+        Zusammensetzung des Gemeinderats
+      </a>
     </p>
     <div class="submitters-grid">
       {submitters.map((submitter) => (

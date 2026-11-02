@@ -97,6 +97,7 @@ npm run format
 - `/sitzungen/[id]` -> meeting details and public agenda
 - `/sitzungen/kalender/[id].ics` -> single-meeting calendar download
 - `/feeds` -> update feeds by committee and district
+- `/gremien/gemeinderat` -> council seats by faction, members, sittings
 - `/stadtteile` -> district overview
 - `/stadtteil/[name]` -> papers for one district
 - `/vorlage/[reference]` -> legacy redirect to `/vorlagen/[reference]`
