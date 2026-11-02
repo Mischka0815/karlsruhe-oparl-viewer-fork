@@ -53,6 +53,14 @@ export default defineConfig({
   },
   integrations,
   vite: {
+    server: {
+      watch: {
+        // The data checkout (~93k files) and the build output are read, never
+        // edited during development. Watching them exhausts the Linux inotify
+        // limit (ENOSPC) and makes the dev server heavy on small machines.
+        ignored: ["**/syndication-data/**", "**/dist/**"],
+      },
+    },
     build: {
       // Small scripts are inlined into every page by default. The site hint
       // ships on all ~30k pages, so serve it as one cached file instead.
