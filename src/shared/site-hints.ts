@@ -6,7 +6,6 @@
 export const SITE_HINTS: readonly string[] = [
   "Kein Mensch ist illegal",
   "Transrechte sind Menschenrechte",
-  "Dieser Service ist nicht für Faschisten",
   "Vielfalt ist unsere Stärke",
   "Solidarität statt Spaltung",
   "Menschenwürde ist unverhandelbar",
